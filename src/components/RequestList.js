@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Table, Input, Select, Tag, Space, Card, Tabs, Button } from "antd"
 import { SearchOutlined } from "@ant-design/icons"
 import { useNavigate } from "react-router-dom"
@@ -22,7 +22,7 @@ const mockData = [
   {
     key: "2",
     ticketId: "#251",
-    subject: "Example Ticket Headline",
+    subject: "Example yok Ticket Headline",
     status: "closed",
     priority: "high",
     category: "category2",
@@ -74,6 +74,11 @@ const mockData = [
 function RequestList() {
   const [searchText, setSearchText] = useState("")
   const [filteredData, setFilteredData] = useState(mockData)
+  const [orderBy, setOrderBy] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
+  const [priorityFilter, setPriorityFilter] = useState("")
+  const [categoryFilter, setCategoryFilter] = useState("")
+  const [activeTab, setActiveTab] = useState("1")
   const navigate = useNavigate()
 
   const getPriorityColor = (priority) => {
@@ -87,6 +92,111 @@ function RequestList() {
       default:
         return "default"
     }
+  }
+
+  const getCategoryColor = (category) => {
+    switch (category) {
+      case "category1":
+        return "#722ed1" // Mor
+      case "category2":
+        return "#13c2c2" // Turkuaz
+      case "category3":
+        return "#fa8c16" // Turuncu
+      default:
+        return "#d9d9d9" // Gri
+    }
+  }
+
+  // Filter and sort data based on all filters
+  useEffect(() => {
+    let filtered = [...mockData]
+
+    // Search filter
+    if (searchText) {
+      filtered = filtered.filter(
+        (item) =>
+          item.subject.toLowerCase().includes(searchText.toLowerCase()) ||
+          item.ticketId.toLowerCase().includes(searchText.toLowerCase()) ||
+          item.category.toLowerCase().includes(searchText.toLowerCase()),
+      )
+    }
+
+    // Status filter
+    if (statusFilter) {
+      filtered = filtered.filter((item) => item.status === statusFilter)
+    }
+
+    // Priority filter
+    if (priorityFilter) {
+      filtered = filtered.filter((item) => item.priority === priorityFilter)
+    }
+
+    // Category filter
+    if (categoryFilter) {
+      filtered = filtered.filter((item) => item.category === categoryFilter)
+    }
+
+    // Tab filter (simulate different data for different tabs)
+    if (activeTab === "2") {
+      // Requests I'm CC'd On - show only some tickets
+      filtered = filtered.filter((item) => ["1", "3", "5"].includes(item.key))
+    } else if (activeTab === "3") {
+      // Requests I'm Followers On - show different tickets
+      filtered = filtered.filter((item) => ["2", "4", "6"].includes(item.key))
+    }
+
+    // Sort data
+    if (orderBy) {
+      filtered.sort((a, b) => {
+        switch (orderBy) {
+          case "date":
+            return new Date(b.updateDate.split('.').reverse().join('-')) - new Date(a.updateDate.split('.').reverse().join('-'))
+          case "priority":
+            const priorityOrder = { high: 3, normal: 2, low: 1 }
+            return priorityOrder[b.priority] - priorityOrder[a.priority]
+          case "status":
+            return a.status.localeCompare(b.status)
+          case "ticketId":
+            return parseInt(a.ticketId.slice(1)) - parseInt(b.ticketId.slice(1))
+          default:
+            return 0
+        }
+      })
+    }
+
+    setFilteredData(filtered)
+  }, [searchText, orderBy, statusFilter, priorityFilter, categoryFilter, activeTab])
+
+  const handleSearch = (value) => {
+    setSearchText(value)
+  }
+
+  const handleOrderByChange = (value) => {
+    setOrderBy(value)
+  }
+
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value)
+  }
+
+  const handlePriorityFilterChange = (value) => {
+    setPriorityFilter(value)
+  }
+
+  const handleCategoryFilterChange = (value) => {
+    setCategoryFilter(value)
+  }
+
+  const handleTabChange = (key) => {
+    setActiveTab(key)
+  }
+
+  const clearAllFilters = () => {
+    setSearchText("")
+    setOrderBy("")
+    setStatusFilter("")
+    setPriorityFilter("")
+    setCategoryFilter("")
   }
 
   const columns = [
@@ -108,6 +218,7 @@ function RequestList() {
             color: "white",
             fontSize: "12px",
             fontWeight: "bold",
+            
           }}
         >
           {status === "open" ? "O" : "C"}
@@ -191,17 +302,6 @@ function RequestList() {
     },
   ]
 
-  const handleSearch = (value) => {
-    setSearchText(value)
-    const filtered = mockData.filter(
-      (item) =>
-        item.subject.toLowerCase().includes(value.toLowerCase()) ||
-        item.ticketId.toLowerCase().includes(value.toLowerCase()) ||
-        item.category.toLowerCase().includes(value.toLowerCase()),
-    )
-    setFilteredData(filtered)
-  }
-
   const tabItems = [
     {
       key: "1",
@@ -223,7 +323,8 @@ function RequestList() {
   return (
     <div style={{ background: "white", borderRadius: "8px", padding: "24px" }}>
       <Tabs 
-        defaultActiveKey="1" 
+        activeKey={activeTab}
+        onChange={handleTabChange}
         items={tabItems}
         style={{ marginBottom: "24px" }}
         tabBarStyle={{
@@ -239,14 +340,67 @@ function RequestList() {
               size="middle"
               onSearch={handleSearch}
               onChange={(e) => handleSearch(e.target.value)}
-              style={{ width: 300 }}
+              value={searchText}
+              style={{ width: 250 }}
             />
 
-            <Select placeholder="Order by" style={{ width: 120 }} allowClear>
+            <Select 
+              placeholder="Status" 
+              style={{ width: 100 }} 
+              allowClear
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+            >
+              <Option value="open">Open</Option>
+              <Option value="closed">Closed</Option>
+            </Select>
+
+            <Select 
+              placeholder="Priority" 
+              style={{ width: 100 }} 
+              allowClear
+              value={priorityFilter}
+              onChange={handlePriorityFilterChange}
+            >
+              <Option value="high">High</Option>
+              <Option value="normal">Normal</Option>
+              <Option value="low">Low</Option>
+            </Select>
+
+            <Select 
+              placeholder="Category" 
+              style={{ width: 120 }} 
+              allowClear
+              value={categoryFilter}
+              onChange={handleCategoryFilterChange}
+            >
+              <Option value="category1">Category 1</Option>
+              <Option value="category2">Category 2</Option>
+              <Option value="category3">Category 3</Option>
+            </Select>
+
+            <Select 
+              placeholder="Order by" 
+              style={{ width: 120 }} 
+              allowClear
+              value={orderBy}
+              onChange={handleOrderByChange}
+            >
               <Option value="date">Date</Option>
               <Option value="priority">Priority</Option>
               <Option value="status">Status</Option>
+              <Option value="ticketId">Ticket ID</Option>
             </Select>
+
+            {(searchText || orderBy || statusFilter || priorityFilter || categoryFilter) && (
+              <Button 
+                size="small" 
+                onClick={clearAllFilters}
+                style={{ fontSize: "12px" }}
+              >
+                Clear Filters
+              </Button>
+            )}
           </Space>
         }
       />
@@ -292,6 +446,50 @@ function RequestList() {
         }
         .ant-table-tbody > tr > td {
           border-bottom: 1px solid #f0f0f0 !important;
+        }
+        
+        /* Dropdown menü stilleri */
+        .ant-select-dropdown {
+          background-color: white !important;
+          border: 1px solid #d9d9d9 !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        .ant-select-item {
+          color: #333 !important;
+          background-color: white !important;
+        }
+        
+        .ant-select-item:hover {
+          background-color: #f5f5f5 !important;
+        }
+        
+        .ant-select-item-option-selected {
+          background-color: #e6f7ff !important;
+          color: #333 !important;
+        }
+        
+        .ant-select-selection-item {
+          color: #333 !important;
+        }
+        
+        .ant-select-selection-placeholder {
+          color: #bfbfbf !important;
+        }
+        
+        /* Search input stilleri */
+        .ant-input {
+          background-color: white !important;
+          color: #333 !important;
+        }
+        
+        .ant-input::placeholder {
+          color: #bfbfbf !important;
+        }
+        
+        /* Button stilleri */
+        .ant-btn {
+          color: #333 !important;
         }
       `}</style>
     </div>

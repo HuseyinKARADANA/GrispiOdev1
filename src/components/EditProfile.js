@@ -11,13 +11,13 @@ function EditProfile() {
   const [loading, setLoading] = useState(false)
 
   const initialValues = {
-    firstName: "",
-    lastName: "",
+    firstName: "Hüseyin",
+    lastName: "Karadana",
     primaryPhone: "598 765 43 21",
     primaryEmail: "customer@grispi.com.tr",
     website: "",
-    country: "",
-    city: "",
+    country: "Turkey",
+    city: "İzmir",
     addressLine: "",
     postalCode: "",
     currentPassword: ""
