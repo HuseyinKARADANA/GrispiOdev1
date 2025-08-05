@@ -9,12 +9,14 @@ const { Title, Text } = Typography
 
 function Login() {
   const [loading, setLoading] = useState(false)
+  const [fieldError, setFieldError] = useState({ email: false, password: false, message: "" })
   const navigate = useNavigate()
   const { message } = App.useApp()
 
   const onFinish = async (values) => {
     try {
       setLoading(true)
+      setFieldError({ email: false, password: false, message: "" })
       const response = await apiPost(API_ENDPOINTS.LOGIN, {
         email: values.email,
         password: values.password,
@@ -38,7 +40,16 @@ function Login() {
         message.error("Token alınamadı!")
       }
     } catch (error) {
-      message.error(error.message || "Giriş yapılırken hata oluştu")
+      // API'den dönen error mesajını göster
+      let errorMsg = error.message || "Giriş yapılırken hata oluştu"
+      if (error.response && error.response.data && error.response.data.error) {
+        errorMsg = error.response.data.error
+      }
+      // Eğer 401 ise inputları kırmızı yap
+      if (error.response && error.response.status === 401) {
+        setFieldError({ email: true, password: true, message: errorMsg })
+      }
+      message.error(errorMsg)
     } finally {
       setLoading(false)
     }
@@ -103,6 +114,8 @@ function Login() {
               { required: true, message: "E-posta adresi gerekli!" },
               { type: "email", message: "Geçerli bir e-posta adresi girin!" },
             ]}
+            validateStatus={fieldError.email ? "error" : undefined}
+            help={fieldError.email ? fieldError.message : undefined}
           >
             <Input
               prefix={<MailOutlined style={{ color: "#bfbfbf" }} />}
@@ -110,7 +123,7 @@ function Login() {
               style={{
                 borderRadius: "8px",
                 height: "48px",
-                border: "1px solid #d9d9d9",
+                border: fieldError.email ? "1.5px solid #ff4d4f" : "1px solid #d9d9d9",
               }}
             />
           </Form.Item>
@@ -121,6 +134,8 @@ function Login() {
                { required: true, message: "Şifre gerekli!" },
                { min: 6, message: "Şifre en az 6 karakter olmalı!" },
              ]}
+             validateStatus={fieldError.password ? "error" : undefined}
+             help={fieldError.password ? fieldError.message : undefined}
            >
              <Input.Password
                prefix={<LockOutlined style={{ color: "#bfbfbf" }} />}
@@ -128,7 +143,7 @@ function Login() {
                style={{
                  borderRadius: "8px",
                  height: "48px",
-                 border: "1px solid #d9d9d9",
+                 border: fieldError.password ? "1.5px solid #ff4d4f" : "1px solid #d9d9d9",
                }}
              />
            </Form.Item>

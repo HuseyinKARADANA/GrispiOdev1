@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Card, Form, Input, Select, Button, Upload, message, Typography, Space } from "antd"
 import { 
@@ -25,6 +25,9 @@ import {
   UndoOutlined,
   RedoOutlined
 } from "@ant-design/icons"
+import { apiGet } from "../lib/api"
+import ReactQuill from "react-quill"
+import "react-quill/dist/quill.snow.css"
 
 const { TextArea } = Input
 const { Option } = Select
@@ -34,15 +37,26 @@ function NewRequest() {
   const [form] = Form.useForm()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [catLoading, setCatLoading] = useState(false)
+  const [catError, setCatError] = useState("")
+  const [description, setDescription] = useState("")
 
-  const categories = [
-    { value: "category1", label: "Category 1" },
-    { value: "category2", label: "Category 2" },
-    { value: "category3", label: "Category 3" },
-    { value: "technical", label: "Technical Support" },
-    { value: "billing", label: "Billing" },
-    { value: "general", label: "General Inquiry" },
-  ]
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setCatLoading(true)
+      setCatError("")
+      try {
+        const response = await apiGet("/Category/active_list")
+        setCategories(response)
+      } catch (err) {
+        setCatError("Kategoriler yüklenemedi")
+      } finally {
+        setCatLoading(false)
+      }
+    }
+    fetchCategories()
+  }, [])
 
   const uploadProps = {
     name: "file",
@@ -58,6 +72,8 @@ function NewRequest() {
   const onFinish = async (values) => {
     setLoading(true)
     try {
+      // description'u form değerlerine ekle
+      const submitValues = { ...values, description }
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
       message.success("Request submitted successfully!")
@@ -97,10 +113,17 @@ function NewRequest() {
               rules={[{ required: true, message: "Please select a category" }]}
               style={{ marginBottom: 12 }}
             >
-              <Select placeholder="Select a category" size="middle" style={{ borderRadius: "5px", fontSize: 13 }}>
+              <Select
+                placeholder={catLoading ? "Kategoriler yükleniyor..." : "Select a category"}
+                size="middle"
+                style={{ borderRadius: "5px", fontSize: 13 }}
+                loading={catLoading}
+                disabled={catLoading || !!catError}
+                notFoundContent={catError || "Kategori bulunamadı"}
+              >
                 {categories.map((category) => (
-                  <Option key={category.value} value={category.value}>
-                    {category.label}
+                  <Option key={category.id} value={category.id}>
+                    {category.category_name}
                   </Option>
                 ))}
               </Select>
@@ -160,56 +183,26 @@ function NewRequest() {
               name="description"
               rules={[{ required: true, message: "Please enter a description" }]}
               style={{ marginBottom: 18 }}
+              // ReactQuill ile Form entegrasyonu için valuePropName ve trigger ekleniyor
+              valuePropName="value"
+              getValueFromEvent={val => val}
+              trigger="onChange"
             >
-              <div>
-                {/* Rich Text Editor Toolbar */}
-                <div style={{ 
-                  border: "1px solid #d9d9d9", 
-                  borderBottom: "none", 
-                  padding: "4px 8px", 
-                  backgroundColor: "#fafafa",
-                  borderRadius: "5px 5px 0 0",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  flexWrap: "wrap"
-                }}>
-                  <Button type="text" size="small" icon={<UndoOutlined />} />
-                  <Button type="text" size="small" icon={<RedoOutlined />} />
-                  <Select defaultValue="normal" size="small" style={{ width: 80, fontSize: 12 }}>
-                    <Option value="normal">Normal</Option>
-                    <Option value="h1">Heading 1</Option>
-                    <Option value="h2">Heading 2</Option>
-                  </Select>
-                  <Button type="text" size="small" icon={<BoldOutlined />} />
-                  <Button type="text" size="small" icon={<ItalicOutlined />} />
-                  <Button type="text" size="small" icon={<UnderlineOutlined />} />
-                  <Button type="text" size="small" icon={<StrikethroughOutlined />} />
-                  <Button type="text" size="small" icon={<UnorderedListOutlined />} />
-                  <Button type="text" size="small" icon={<OrderedListOutlined />} />
-                  <Button type="text" size="small" icon={<AlignLeftOutlined />} />
-                  <Button type="text" size="small" icon={<AlignCenterOutlined />} />
-                  <Button type="text" size="small" icon={<AlignRightOutlined />} />
-                  <Button type="text" size="small" icon={<MessageOutlined />} />
-                  <Button type="text" size="small" icon={<LinkOutlined />} />
-                  <Button type="text" size="small" icon={<PictureOutlined />} />
-                  <Button type="text" size="small" icon={<CodeOutlined />} />
-                  <Button type="text" size="small" icon={<SmileOutlined />} />
-                  <Button type="text" size="small" icon={<ClearOutlined />} />
-                </div>
-                
-                <TextArea 
-                  placeholder="Please describe your request in detail..." 
-                  rows={5} 
-                  size="middle"
-                  style={{ 
-                    borderRadius: "0 0 5px 5px",
-                    borderTop: "none",
-                    fontSize: 13,
-                    minHeight: 80
-                  }}
-                />
-              </div>
+              <ReactQuill
+                value={description}
+                onChange={setDescription}
+                theme="snow"
+                style={{ minHeight: 120, borderRadius: 5, background: "#fff" }}
+                modules={{
+                  toolbar: [
+                    [{ 'header': [1, 2, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'image', 'code-block'],
+                    ['clean']
+                  ]
+                }}
+              />
             </Form.Item>
 
             <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
