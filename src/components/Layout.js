@@ -1,6 +1,6 @@
 "use client"
 
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Badge, Button } from "antd"
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Badge, Button, App } from "antd"
 import {
   HomeOutlined,
   SettingOutlined,
@@ -11,21 +11,33 @@ import {
   UserOutlined,
 } from "@ant-design/icons"
 import { useNavigate, useLocation } from "react-router-dom"
+import { removeAuthToken, removeCurrentUser, getCurrentUser } from "../lib/config"
 
 const { Header, Sider, Content } = AntLayout
 
 function Layout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const currentUser = getCurrentUser()
+  const { message } = App.useApp()
+
+  const handleLogout = () => {
+    removeAuthToken()
+    removeCurrentUser()
+    message.success("Başarıyla çıkış yapıldı!")
+    navigate("/login")
+  }
 
   const menuItems = [
     {
       key: "/requests",
       icon: <HomeOutlined style={{ fontSize: "20px" }} />,
+      label: "Requests",
     },
     {
       key: "/profile",
       icon: <SettingOutlined style={{ fontSize: "20px" }} />,
+      label: "Profile",
     },
   ]
 
@@ -40,6 +52,7 @@ function Layout({ children }) {
       key: "logout",
       icon: <LogoutOutlined />,
       label: "Log Out",
+      onClick: handleLogout,
     },
   ]
 
@@ -103,7 +116,9 @@ function Layout({ children }) {
                 borderRadius: "6px",
               }}
             >
-              <Avatar style={{ backgroundColor: "#722ed1" }}>G</Avatar>
+              <Avatar style={{ backgroundColor: "#722ed1" }}>
+                {currentUser?.name?.charAt(0) || 'U'}
+              </Avatar>
             </div>
           </Dropdown>
         </div>

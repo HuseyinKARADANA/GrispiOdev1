@@ -11,6 +11,7 @@
   "dependencies": {
     "@ant-design/icons": "latest",
     "antd": "latest",
+    "axios": "^1.11.0",
     "react": "^18",
     "react-dom": "^18",
     "react-router-dom": "latest",
