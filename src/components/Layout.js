@@ -43,6 +43,21 @@ function Layout({ children }) {
 
   const userMenuItems = [
     {
+      key: "user-info",
+      label: (
+        <div style={{ padding: "8px 12px", borderBottom: "1px solid #f0f0f0" }}>
+          <div style={{ fontWeight: "600", fontSize: "14px", color: "#333" }}>
+            {currentUser?.name} {currentUser?.surname}
+          </div>
+          <div style={{ fontSize: "12px", color: "#666", marginTop: "2px" }}>
+            {currentUser?.email}
+          </div>
+        </div>
+      ),
+      disabled: true,
+    },
+   
+    {
       key: "profile",
       icon: <EditOutlined />,
       label: "Edit Profile",
@@ -90,7 +105,7 @@ function Layout({ children }) {
               border: "none",
               borderRadius: 0,
               height: "100%",
-              padding: "0 24px 0 0",
+              padding: "0 24px 0 24px",
               boxShadow: "none",
               cursor: "pointer"
             }}
@@ -110,12 +125,43 @@ function Layout({ children }) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
+                gap: "12px",
                 cursor: "pointer",
-                padding: "4px 8px",
-                borderRadius: "6px",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                backgroundColor: "rgba(114, 46, 209, 0.05)",
+                border: "1px solid rgba(114, 46, 209, 0.1)",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(114, 46, 209, 0.1)"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(114, 46, 209, 0.05)"
               }}
             >
+              {/* Kullanıcı Bilgileri */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", minWidth: "120px" }}>
+                <div style={{ 
+                  fontWeight: "600", 
+                  fontSize: "14px", 
+                  color: "#333",
+                  lineHeight: "1.2",
+                  textAlign: "right"
+                }}>
+                  {currentUser?.name} {currentUser?.surname}
+                </div>
+                <div style={{ 
+                  fontSize: "12px", 
+                  color: "#666",
+                  lineHeight: "1.2",
+                  textAlign: "right"
+                }}>
+                  {currentUser?.email}
+                </div>
+              </div>
+              
+              {/* Avatar */}
               <Avatar style={{ backgroundColor: "#722ed1" }}>
                 {currentUser?.name?.charAt(0) || 'U'}
               </Avatar>

@@ -1,94 +1,63 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Table, Input, Select, Tag, Space, Card, Tabs, Button } from "antd"
+import { Table, Input, Select, Tag, Space, Card, Tabs, Button, message } from "antd"
 import { SearchOutlined } from "@ant-design/icons"
 import { useNavigate } from "react-router-dom"
+import { apiGet } from "../lib/api"
 
 const { Search } = Input
 const { Option } = Select
 
-const mockData = [
-  {
-    key: "1",
-    ticketId: "#254",
-    subject: "Example Ticket Headline",
-    status: "open",
-    priority: "high",
-    category: "category1",
-    updateDate: "15.02.2025",
-    createdDate: "24.01.2025",
-  },
-  {
-    key: "2",
-    ticketId: "#251",
-    subject: "Example yok Ticket Headline",
-    status: "closed",
-    priority: "high",
-    category: "category2",
-    updateDate: "15.02.2024",
-    createdDate: "24.01.2024",
-  },
-  {
-    key: "3",
-    ticketId: "#2711",
-    subject: "Example Ticket Headline",
-    status: "open",
-    priority: "low",
-    category: "category3",
-    updateDate: "15.02.2025",
-    createdDate: "24.01.2025",
-  },
-  {
-    key: "4",
-    ticketId: "#101",
-    subject: "Example Ticket Headline",
-    status: "closed",
-    priority: "normal",
-    category: "category2",
-    updateDate: "15.02.2025",
-    createdDate: "24.01.2025",
-  },
-  {
-    key: "5",
-    ticketId: "#589",
-    subject: "Example Ticket Headline",
-    status: "closed",
-    priority: "normal",
-    category: "category3",
-    updateDate: "15.02.2025",
-    createdDate: "24.01.2025",
-  },
-  {
-    key: "6",
-    ticketId: "#543",
-    subject: "Example Ticket Headline",
-    status: "closed",
-    priority: "high",
-    category: "category1",
-    updateDate: "15.02.2025",
-    createdDate: "24.01.2025",
-  },
-]
-
 function RequestList() {
   const [searchText, setSearchText] = useState("")
-  const [filteredData, setFilteredData] = useState(mockData)
+  const [filteredData, setFilteredData] = useState([])
+  const [allData, setAllData] = useState([])
   const [orderBy, setOrderBy] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [priorityFilter, setPriorityFilter] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("")
   const [activeTab, setActiveTab] = useState("1")
+  const [loading, setLoading] = useState(false)
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const navigate = useNavigate()
 
+  // API'den veri çekme fonksiyonu (pagination ile)
+  const fetchTickets = async (page = 1, perPage = 10) => {
+    setLoading(true)
+    try {
+      const data = await apiGet(`/Ticket/my-requests?page=${page}&per_page=${perPage}`)
+      setAllData(data.data)
+      setPagination({
+        current: data.pagination.page,
+        pageSize: data.pagination.per_page,
+        total: data.pagination.total_items
+      })
+    } catch (err) {
+      message.error("Ticketlar yüklenemedi")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTickets(pagination.current, pagination.pageSize)
+    // eslint-disable-next-line
+  }, [])
+
+  // Table pagination değiştiğinde API'den yeni veri çek
+  const handleTableChange = (pag) => {
+    fetchTickets(pag.current, pag.pageSize)
+  }
+
   const getPriorityColor = (priority) => {
-    switch (priority) {
+    switch (priority.toLowerCase()) {
       case "high":
-        return "#ff4d4f" // Kırmızı
+        return "#ff4d4f"
       case "normal":
-        return "#1890ff" // Mavi
+        return "#1890ff"
       case "low":
-        return "#8c8c8c" // Gri
+        return "#8c8c8c"
       default:
         return "default"
     }
@@ -97,38 +66,38 @@ function RequestList() {
   const getCategoryColor = (category) => {
     switch (category) {
       case "category1":
-        return "#722ed1" // Mor
+        return "#722ed1"
       case "category2":
-        return "#13c2c2" // Turkuaz
+        return "#13c2c2"
       case "category3":
-        return "#fa8c16" // Turuncu
+        return "#fa8c16"
       default:
-        return "#d9d9d9" // Gri
+        return "#d9d9d9"
     }
   }
 
   // Filter and sort data based on all filters
   useEffect(() => {
-    let filtered = [...mockData]
+    let filtered = [...allData]
 
     // Search filter
     if (searchText) {
       filtered = filtered.filter(
         (item) =>
           item.subject.toLowerCase().includes(searchText.toLowerCase()) ||
-          item.ticketId.toLowerCase().includes(searchText.toLowerCase()) ||
-          item.category.toLowerCase().includes(searchText.toLowerCase()),
+          item.ticket_id.toLowerCase().includes(searchText.toLowerCase()) ||
+          (item.category && item.category.toLowerCase().includes(searchText.toLowerCase()))
       )
     }
 
     // Status filter
     if (statusFilter) {
-      filtered = filtered.filter((item) => item.status === statusFilter)
+      filtered = filtered.filter((item) => item.status.toLowerCase() === statusFilter)
     }
 
     // Priority filter
     if (priorityFilter) {
-      filtered = filtered.filter((item) => item.priority === priorityFilter)
+      filtered = filtered.filter((item) => item.priority.toLowerCase() === priorityFilter)
     }
 
     // Category filter
@@ -136,28 +105,22 @@ function RequestList() {
       filtered = filtered.filter((item) => item.category === categoryFilter)
     }
 
-    // Tab filter (simulate different data for different tabs)
-    if (activeTab === "2") {
-      // Requests I'm CC'd On - show only some tickets
-      filtered = filtered.filter((item) => ["1", "3", "5"].includes(item.key))
-    } else if (activeTab === "3") {
-      // Requests I'm Followers On - show different tickets
-      filtered = filtered.filter((item) => ["2", "4", "6"].includes(item.key))
-    }
+    // Tab filter (şimdilik sadece My Requests aktif)
+    // ...
 
     // Sort data
     if (orderBy) {
       filtered.sort((a, b) => {
         switch (orderBy) {
           case "date":
-            return new Date(b.updateDate.split('.').reverse().join('-')) - new Date(a.updateDate.split('.').reverse().join('-'))
+            return new Date(b.update_date.split('.').reverse().join('-')) - new Date(a.update_date.split('.').reverse().join('-'))
           case "priority":
-            const priorityOrder = { high: 3, normal: 2, low: 1 }
+            const priorityOrder = { HIGH: 3, NORMAL: 2, LOW: 1 }
             return priorityOrder[b.priority] - priorityOrder[a.priority]
           case "status":
             return a.status.localeCompare(b.status)
           case "ticketId":
-            return parseInt(a.ticketId.slice(1)) - parseInt(b.ticketId.slice(1))
+            return parseInt(a.ticket_id.replace('#', '')) - parseInt(b.ticket_id.replace('#', ''))
           default:
             return 0
         }
@@ -165,7 +128,7 @@ function RequestList() {
     }
 
     setFilteredData(filtered)
-  }, [searchText, orderBy, statusFilter, priorityFilter, categoryFilter, activeTab])
+  }, [searchText, orderBy, statusFilter, priorityFilter, categoryFilter, activeTab, allData])
 
   const handleSearch = (value) => {
     setSearchText(value)
@@ -211,29 +174,28 @@ function RequestList() {
             width: "20px",
             height: "20px",
             borderRadius: "50%",
-            backgroundColor: status === "open" ? "#ff4d4f" : "#52c41a",
+            backgroundColor: status === "OPEN" ? "#ff4d4f" : "#52c41a",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             color: "white",
             fontSize: "12px",
             fontWeight: "bold",
-            
           }}
         >
-          {status === "open" ? "O" : "C"}
+          {status === "OPEN" ? "O" : "C"}
         </div>
       ),
     },
     {
       title: "Ticket ID",
-      dataIndex: "ticketId",
-      key: "ticketId",
+      dataIndex: "ticket_id",
+      key: "ticket_id",
       width: 100,
       render: (ticketId, record) => (
         <Button 
           type="link" 
-          onClick={() => navigate(`/requests/${record.key}`)} 
+          onClick={() => navigate(`/requests/${record.ticket_id.replace('#', '')}`)} 
           style={{ 
             padding: 0, 
             height: "auto",
@@ -252,7 +214,7 @@ function RequestList() {
       render: (subject, record) => (
         <Button
           type="link"
-          onClick={() => navigate(`/requests/${record.key}`)}
+          onClick={() => navigate(`/requests/${record.ticket_id.replace('#', '')}`)}
           style={{ 
             padding: 0, 
             height: "auto", 
@@ -278,7 +240,7 @@ function RequestList() {
             fontWeight: "500"
           }}
         >
-          {priority.toUpperCase()}
+          {priority}
         </Tag>
       ),
     },
@@ -290,14 +252,14 @@ function RequestList() {
     },
     {
       title: "Update Date",
-      dataIndex: "updateDate",
-      key: "updateDate",
+      dataIndex: "update_date",
+      key: "update_date",
       width: 120,
     },
     {
       title: "Created Date",
-      dataIndex: "createdDate",
-      key: "createdDate",
+      dataIndex: "created_date",
+      key: "created_date",
       width: 120,
     },
   ]
@@ -408,17 +370,22 @@ function RequestList() {
       <Table
         columns={columns}
         dataSource={filteredData}
+        loading={loading}
         pagination={{
-          pageSize: 10,
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
           showSizeChanger: true,
           showQuickJumper: true,
           showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
         }}
+        onChange={handleTableChange}
         size="middle"
         style={{ background: "white" }}
         rowClassName={(record, index) => 
           index % 2 === 0 ? 'table-row-white' : 'table-row-gray'
         }
+        rowKey={record => record.ticket_id}
       />
 
       <style jsx>{`

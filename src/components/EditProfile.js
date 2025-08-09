@@ -1,14 +1,158 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, Form, Input, Button, Row, Col, Typography, Space } from "antd"
 import { EditOutlined } from "@ant-design/icons"
+import { apiGet } from "../lib/api"
 
 const { Title, Text } = Typography
 
 function EditProfile() {
-  const [form] = Form.useForm()
-  const [loading, setLoading] = useState(false)
+  const [form] = Form.useForm();
+  // mevcut user verisini al
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false)
+  const [isEditingAddress, setIsEditingAddress] = useState(false)
+  const [isEditingPassword, setIsEditingPassword] = useState(false)
+  const [userRole, setUserRole] = useState("");
+
+  // Orijinal veriler (örnek)
+  const [personalInfo, setPersonalInfo] = useState({
+    firstName: "Hüseyin",
+    lastName: "Karadana",
+    phone: "598 765 43 21",
+    email: "customer@grispi.com.tr",
+    website: ""
+  })
+  const [personalInfoDraft, setPersonalInfoDraft] = useState(personalInfo)
+
+  const [address, setAddress] = useState({
+    country: "Turkey",
+    city: "İzmir",
+    addressLine: "",
+    postalCode: ""
+  })
+  const [addressDraft, setAddressDraft] = useState(address)
+
+  const [passwordDraft, setPasswordDraft] = useState({ current: "" })
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await apiGet("/User/profile");
+        setPersonalInfo({
+          firstName: data.name,
+          lastName: data.surname,
+          phone: data.preliminary_phone,
+          email: data.preliminary_email,
+          website: data.website || ""
+        });
+        setPersonalInfoDraft({
+          firstName: data.name,
+          lastName: data.surname,
+          phone: data.preliminary_phone,
+          email: data.preliminary_email,
+          website: data.website || ""
+        });
+        setAddress({
+          country: data.address.country,
+          city: data.address.city,
+          addressLine: data.address.address_line,
+          postalCode: data.address.postal_code
+        });
+        setAddressDraft({
+          country: data.address.country,
+          city: data.address.city,
+          addressLine: data.address.address_line,
+          postalCode: data.address.postal_code
+        });
+        setUserRole(data.role);
+        form.setFieldsValue({
+          firstName: data.name,
+          lastName: data.surname,
+          primaryPhone: data.preliminary_phone,
+          primaryEmail: data.preliminary_email,
+          website: data.website || "",
+          country: data.address.country,
+          city: data.address.city,
+          addressLine: data.address.address_line,
+          postalCode: data.address.postal_code,
+          currentPassword: ""
+        });
+      } catch (err) {
+        // Hata yönetimi
+      }
+    };
+    fetchProfile();
+    // eslint-disable-next-line
+  }, []);
+
+  // Kişisel Bilgi Edit
+  const handleEditPersonal = () => {
+    setIsEditingPersonal(true)
+    setPersonalInfoDraft(personalInfo)
+  }
+  const handleUndoPersonal = () => {
+    setIsEditingPersonal(false)
+    setPersonalInfoDraft(personalInfo)
+  }
+  const handleSavePersonal = async () => {
+    // API entegrasyonu burada olacak
+    setPersonalInfo(personalInfoDraft)
+    setIsEditingPersonal(false)
+  }
+
+  // Adres Edit
+  const handleEditAddress = () => {
+    setIsEditingAddress(true)
+    setAddressDraft(address)
+  }
+  const handleUndoAddress = () => {
+    setIsEditingAddress(false)
+    setAddressDraft(address)
+  }
+  const handleSaveAddress = async () => {
+    // API entegrasyonu burada olacak
+    setAddress(addressDraft)
+    setIsEditingAddress(false)
+  }
+
+  // Şifre Edit
+  const handleEditPassword = () => {
+    setIsEditingPassword(true)
+    setPasswordDraft({ current: "" })
+  }
+  const handleUndoPassword = () => {
+    setIsEditingPassword(false)
+    setPasswordDraft({ current: "" })
+  }
+  const handleSavePassword = async () => {
+    // API entegrasyonu burada olacak
+    setIsEditingPassword(false)
+  }
+
+  const handleUndoAll = () => {
+    // Tüm edit modlarını kapat ve draftları orijinal değerlere döndür
+    setIsEditingPersonal(false);
+    setIsEditingAddress(false);
+    setIsEditingPassword(false);
+
+    setPersonalInfoDraft(personalInfo);
+    setAddressDraft(address);
+    setPasswordDraft({ current: "" });
+
+    // Form alanlarını da sıfırla
+    form.resetFields();
+  };
+
+  const handleSaveAll = () => {
+    // Tüm draftları kaydet ve edit modlarını kapat
+    setPersonalInfo(personalInfoDraft);
+    setAddress(addressDraft);
+    // Şifre için ayrıca API'ye gönderim yapılabilir
+    setIsEditingPersonal(false);
+    setIsEditingAddress(false);
+    setIsEditingPassword(false);
+  };
 
   const initialValues = {
     firstName: "Hüseyin",
@@ -54,8 +198,10 @@ function EditProfile() {
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 22, fontWeight: 600, color: "#222" }}>Customer Name</div>
-              <div style={{ fontSize: 14, color: "#888", marginTop: 2 }}>Role <span style={{ color: "#222", fontWeight: 500, marginLeft: 6 }}>Admin</span></div>
+              <div style={{ fontSize: 22, fontWeight: 600, color: "#222" }}>{personalInfo.firstName} {personalInfo.lastName}</div>
+              <div style={{ fontSize: 14, color: "#888", marginTop: 2 }}>
+                Role <span style={{ color: "#222", fontWeight: 500, marginLeft: 6 }}>{userRole}</span>
+              </div>
             </div>
           </div>
 
@@ -70,55 +216,112 @@ function EditProfile() {
             <Card style={{ borderRadius: 8, border: "1.5px solid #eee", marginBottom: 16 }} bodyStyle={{ padding: 16, paddingBottom: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <Title level={5} style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>Personal Information</Title>
-                <EditOutlined style={{ color: "#bbb", fontSize: 16, cursor: "pointer" }} />
+                <div style={{ position: "absolute", top: 16, right: 16 }}>
+                  <EditOutlined
+                    style={{
+                      fontSize: 20,
+                      color: isEditingPersonal ? "#722ed1" : "#bfbfbf",
+                      cursor: "pointer",
+                      transition: "color 0.2s"
+                    }}
+                    onClick={handleEditPersonal}
+                  />
+                </div>
               </div>
               <Row gutter={20}>
                 <Col span={12}>
                   <Form.Item label="First Name" name="firstName" style={{ marginBottom: 8 }}>
-                    <Input size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input
+                      value={isEditingPersonal ? personalInfoDraft.firstName : personalInfo.firstName}
+                      onChange={e => setPersonalInfoDraft({ ...personalInfoDraft, firstName: e.target.value })}
+                      disabled={!isEditingPersonal}
+                      size="middle"
+                      style={{ borderRadius: 6, height: 32 }}
+                    />
                   </Form.Item>
                   <Form.Item label="Preliminary Phone" name="primaryPhone" style={{ marginBottom: 8 }}>
-                    <Input addonBefore={<span style={{ display: "flex", alignItems: "center" }}><img src="https://upload.wikimedia.org/wikipedia/commons/b/b4/Flag_of_Turkey.svg" alt="tr" style={{ width: 18, marginRight: 4, borderRadius: 2 }} /> <span style={{ marginLeft: 4, fontSize: 12, color: "#222" }}>+90</span></span>} size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input disabled={!isEditingPersonal} addonBefore={<span style={{ display: "flex", alignItems: "center" }}><img src="https://upload.wikimedia.org/wikipedia/commons/b/b4/Flag_of_Turkey.svg" alt="tr" style={{ width: 18, marginRight: 4, borderRadius: 2 }} /> <span style={{ marginLeft: 4, fontSize: 12, color: "#222" }}>+90</span></span>} size="middle" style={{ borderRadius: 6, height: 32 }} />
                   </Form.Item>
                   <Form.Item label="Website (Optional)" name="website" style={{ marginBottom: 8 }}>
-                    <Input size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input disabled={!isEditingPersonal} size="middle" style={{ borderRadius: 6, height: 32 }} />
                   </Form.Item>
-                  <div style={{ color: "#722ed1", fontSize: 13, marginTop: 2, cursor: "pointer" }}>+ Add more</div>
+                  {isEditingPersonal && (
+                    <>
+                      <div style={{ color: "#722ed1", fontSize: 13, marginTop: 2, cursor: "pointer" }}>+ Add more</div>
+                      <div style={{ color: "#722ed1", fontSize: 13, marginTop: 2, cursor: "pointer" }}>+ Add Phone</div>
+                     
+                    </>
+                  )}
                 </Col>
                 <Col span={12}>
                   <Form.Item label="Last Name" name="lastName" style={{ marginBottom: 8 }}>
-                    <Input size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input disabled={!isEditingPersonal} size="middle" style={{ borderRadius: 6, height: 32 }} />
                   </Form.Item>
                   <Form.Item label="Preliminary Email" name="primaryEmail" style={{ marginBottom: 8 }}>
-                    <Input size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input disabled={!isEditingPersonal} size="middle" style={{ borderRadius: 6, height: 32 }} />
                   </Form.Item>
-                  <div style={{ color: "#722ed1", fontSize: 13, marginTop: 24, cursor: "pointer" }}>+ Add Email</div>
+                  {isEditingPersonal && (
+                    <div style={{ color: "#722ed1", fontSize: 13, marginTop: 2, cursor: "pointer" }}>+ Add Email</div>
+                  )}
                 </Col>
               </Row>
-              <div style={{ color: "#722ed1", fontSize: 13, marginTop: 2, cursor: "pointer" }}>+ Add Phone</div>
             </Card>
 
             {/* Address */}
             <Card style={{ borderRadius: 8, border: "1.5px solid #eee", marginBottom: 16 }} bodyStyle={{ padding: 16, paddingBottom: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <Title level={5} style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>Address</Title>
-                <EditOutlined style={{ color: "#bbb", fontSize: 16, cursor: "pointer" }} />
+                <div style={{ position: "absolute", top: 16, right: 16 }}>
+                  <EditOutlined
+                    style={{
+                      fontSize: 20,
+                      color: isEditingAddress ? "#722ed1" : "#bfbfbf",
+                      cursor: "pointer",
+                      transition: "color 0.2s"
+                    }}
+                    onClick={handleEditAddress}
+                  />
+                </div>
               </div>
               <Row gutter={20}>
                 <Col span={12}>
                   <Form.Item label="Country" name="country" style={{ marginBottom: 8 }}>
-                    <Input size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input
+                      value={isEditingAddress ? addressDraft.country : address.country}
+                      onChange={e => setAddressDraft({ ...addressDraft, country: e.target.value })}
+                      disabled={!isEditingAddress}
+                      size="middle"
+                      style={{ borderRadius: 6, height: 32 }}
+                    />
                   </Form.Item>
                   <Form.Item label="Address Line" name="addressLine" style={{ marginBottom: 8 }}>
-                    <Input size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input
+                      value={isEditingAddress ? addressDraft.addressLine : address.addressLine}
+                      onChange={e => setAddressDraft({ ...addressDraft, addressLine: e.target.value })}
+                      disabled={!isEditingAddress}
+                      size="middle"
+                      style={{ borderRadius: 6, height: 32 }}
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item label="City" name="city" style={{ marginBottom: 8 }}>
-                    <Input size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input
+                      value={isEditingAddress ? addressDraft.city : address.city}
+                      onChange={e => setAddressDraft({ ...addressDraft, city: e.target.value })}
+                      disabled={!isEditingAddress}
+                      size="middle"
+                      style={{ borderRadius: 6, height: 32 }}
+                    />
                   </Form.Item>
                   <Form.Item label="Postal Code" name="postalCode" style={{ marginBottom: 8 }}>
-                    <Input size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input
+                      value={isEditingAddress ? addressDraft.postalCode : address.postalCode}
+                      onChange={e => setAddressDraft({ ...addressDraft, postalCode: e.target.value })}
+                      disabled={!isEditingAddress}
+                      size="middle"
+                      style={{ borderRadius: 6, height: 32 }}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -128,22 +331,40 @@ function EditProfile() {
             <Card style={{ borderRadius: 8, border: "1.5px solid #eee", marginBottom: 16 }} bodyStyle={{ padding: 16, paddingBottom: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <Title level={5} style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>Password</Title>
-                <EditOutlined style={{ color: "#bbb", fontSize: 16, cursor: "pointer" }} />
+                <div style={{ position: "absolute", top: 16, right: 16 }}>
+                  <EditOutlined
+                    style={{
+                      fontSize: 20,
+                      color: isEditingPassword ? "#722ed1" : "#bfbfbf",
+                      cursor: "pointer",
+                      transition: "color 0.2s"
+                    }}
+                    onClick={handleEditPassword}
+                  />
+                </div>
               </div>
               <Row gutter={20}>
                 <Col span={12}>
                   <Form.Item label="Current Password" name="currentPassword" style={{ marginBottom: 8 }}>
-                    <Input.Password size="middle" style={{ borderRadius: 6, height: 32 }} />
+                    <Input.Password
+                      value={passwordDraft.current}
+                      onChange={e => setPasswordDraft({ ...passwordDraft, current: e.target.value })}
+                      disabled={!isEditingPassword}
+                      size="middle"
+                      style={{ borderRadius: 6, height: 32 }}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
             </Card>
 
             {/* Butonlar */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 24, margin: "20px 0 16px 0" }}>
-              <Button style={{ minWidth: 160, height: 36, background: "#fff", color: "#722ed1", border: "2px solid #722ed1", borderRadius: 6, fontWeight: 600, fontSize: 14 }}>Undo Changes</Button>
-              <Button type="primary" style={{ minWidth: 160, height: 36, background: "#722ed1", border: "none", borderRadius: 6, fontWeight: 600, fontSize: 14 }}>Save Changes</Button>
-            </div>
+            {(isEditingPersonal || isEditingAddress || isEditingPassword) && (
+              <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 32, marginBottom: 32 }}>
+                <Button onClick={handleUndoAll} style={{ borderColor: "#722ed1", color: "#722ed1" }}>Undo Changes</Button>
+                <Button type="primary" onClick={handleSaveAll} style={{ background: "#722ed1", borderColor: "#722ed1" }}>Save Changes</Button>
+              </div>
+            )}
           </Form>
         </Card>
       </div>

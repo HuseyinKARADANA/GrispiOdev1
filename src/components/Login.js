@@ -24,13 +24,8 @@ function Login() {
       })
 
       if (response.token) {
-        // Token'ı sakla
+        // Token'ı sakla (kullanıcı bilgileri token içinde tutuluyor)
         setAuthToken(response.token)
-        
-        // Kullanıcı bilgilerini de sakla
-        if (response.user) {
-          localStorage.setItem('user', JSON.stringify(response.user))
-        }
         
         message.success("Başarıyla giriş yapıldı!")
         
@@ -201,11 +196,18 @@ function Login() {
           }}
         >
           <Text type="secondary" style={{ fontSize: "12px" }}>
-            <strong>Demo Hesap:</strong>
+            <strong>Demo employee Hesap:</strong>
             <br />
-            E-posta: test@example.com
+            E-posta: krdn35@gmail.com
             <br />
-            Şifre: Test123
+            Şifre: Grispi123456
+            <br />
+            <br />
+            <strong>Demo technician Hesap:</strong>
+            <br />
+            E-posta: krdn@gmail.com
+            <br />
+            Şifre: Grispi123456
             <br />
             <br />
             <strong>Not:</strong> Backend'de kayıtlı bir hesap kullanın

@@ -26,6 +26,7 @@ import {
   RedoOutlined
 } from "@ant-design/icons"
 import { apiGet } from "../lib/api"
+import { BASE_URL, getAuthToken } from "../lib/config"
 import ReactQuill from "react-quill"
 import "react-quill/dist/quill.snow.css"
 
@@ -41,6 +42,7 @@ function NewRequest() {
   const [catLoading, setCatLoading] = useState(false)
   const [catError, setCatError] = useState("")
   const [description, setDescription] = useState("")
+  const [uploadedFiles, setUploadedFiles] = useState([])
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -58,6 +60,31 @@ function NewRequest() {
     fetchCategories()
   }, [])
 
+  const handleFileUpload = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch(`${BASE_URL}/upload`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        message.success("Dosya yüklendi!");
+        return data.fileUrl;
+      } else {
+        message.error(data.error || "Yükleme başarısız!");
+      }
+    } catch (err) {
+      message.error("Yükleme sırasında hata oluştu!");
+    }
+    return null;
+  };
+
   const uploadProps = {
     name: "file",
     multiple: true,
@@ -66,20 +93,44 @@ function NewRequest() {
     },
     onChange(info) {
       console.log("File list:", info.fileList)
+      setUploadedFiles(info.fileList)
     },
   }
 
   const onFinish = async (values) => {
     setLoading(true)
     try {
-      // description'u form değerlerine ekle
-      const submitValues = { ...values, description }
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      message.success("Request submitted successfully!")
-      navigate("/requests")
+      const formData = new FormData();
+      formData.append('subject', values.subject);
+      formData.append('category_id', values.category);
+      formData.append('priority', values.priority);
+      formData.append('description', description);
+      
+      // Dosyaları ekle
+      uploadedFiles.forEach((file, index) => {
+        if (file.originFileObj) {
+          formData.append('attachments', file.originFileObj);
+        }
+      });
+
+      const response = await fetch(`${BASE_URL}/Ticket/create`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        message.success("Destek talebi başarıyla oluşturuldu!");
+        navigate("/requests");
+      } else {
+        message.error(data.error || "Talep oluşturulurken hata oluştu");
+      }
     } catch (error) {
-      message.error("Failed to submit request")
+      message.error("Talep oluşturulurken hata oluştu");
     } finally {
       setLoading(false)
     }
@@ -126,6 +177,29 @@ function NewRequest() {
                     {category.category_name}
                   </Option>
                 ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item 
+              label={
+                <Space>
+                  <span style={{ color: "#ff4d4f" }}>*</span>
+                  <span style={{ fontSize: 13, color: "#222" }}>Priority</span>
+                  <InfoCircleOutlined style={{ color: "#bfbfbf", fontSize: "13px" }} />
+                </Space>
+              }
+              name="priority"
+              rules={[{ required: true, message: "Please select priority" }]}
+              style={{ marginBottom: 12 }}
+            >
+              <Select
+                placeholder="Select priority"
+                size="middle"
+                style={{ borderRadius: "5px", fontSize: 13 }}
+              >
+                <Option value="LOW">LOW</Option>
+                <Option value="MEDIUM">MEDIUM</Option>
+                <Option value="HIGH">HIGH</Option>
               </Select>
             </Form.Item>
 
