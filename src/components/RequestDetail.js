@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Card, Avatar, Button, Input, Tag, Space, Divider, Typography, Row, Col, message, Spin, Select } from "antd"
-import { ArrowLeftOutlined, SendOutlined, CloseOutlined, LoadingOutlined, PaperClipOutlined } from "@ant-design/icons"
+import { ArrowLeftOutlined, SendOutlined, CloseOutlined, LoadingOutlined, PaperClipOutlined, UserOutlined } from "@ant-design/icons"
 import { apiGet, apiPost, apiPatch, apiDelete } from "../lib/api"
 import { API_ENDPOINTS, getCurrentUser } from "../lib/config"
 
@@ -17,6 +17,7 @@ function RequestDetail() {
   const [response, setResponse] = useState("")
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [assigning, setAssigning] = useState(false)
   const [ticketData, setTicketData] = useState(null)
   const [messages, setMessages] = useState([])
   const [ccUsers, setCcUsers] = useState([])
@@ -141,6 +142,56 @@ function RequestDetail() {
       message.error("Follower kaldırılırken hata oluştu")
       console.error("Remove follower error:", error)
     }
+  }
+
+  // Ticket'ı devral
+  const handleAssignTicket = async () => {
+    if (!currentUser?.id) {
+      message.error("Kullanıcı bilgisi bulunamadı")
+      return
+    }
+
+    try {
+      setAssigning(true)
+      // POST metodu kullan ve body'de assigned_user_id gönderme (endpoint request.user_id'den alıyor)
+      await apiPost(API_ENDPOINTS.TICKET_ASSIGN(id), {})
+      message.success("Ticket başarıyla devralındı")
+      
+      // Ticket verilerini yeniden yükle
+      await loadTicketData()
+    } catch (error) {
+      message.error("Ticket devralınırken hata oluştu")
+      console.error("Assign error:", error)
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  // Kullanıcının ticket'ı yanıtlayabilir olup olmadığını kontrol et
+  const canRespond = () => {
+    if (!ticketData || !currentUser) return false
+    
+    // Ticket kapalıysa yanıt verilemez
+    if (ticketData.status === "CLOSED") return false
+    
+    // Kullanıcı ticket'ın sahibi, atanan kişi veya teknisyen/admin ise yanıt verebilir
+    const isRequester = ticketData.requester?.id === currentUser.id
+    const isAssignee = ticketData.assignee?.id === currentUser.id
+    const isTechnician = currentUser.role === "technician" || currentUser.role === "admin"
+    
+    return isRequester || isAssignee || isTechnician
+  }
+
+  // Kullanıcının ticket'ı devralabilir olup olmadığını kontrol et
+  const canAssign = () => {
+    if (!ticketData || !currentUser) return false
+    
+    // Sadece teknisyen/admin devralabilir
+    const isTechnician = currentUser.role === "technician" || currentUser.role === "admin"
+    const isNotAssigned = !ticketData.assignee || !ticketData.assignee.id
+    const isNotAlreadyAssigned = ticketData.assignee?.id !== currentUser.id
+    
+    return isTechnician && (isNotAssigned || isNotAlreadyAssigned)
   }
 
   // Component mount olduğunda verileri yükle
@@ -271,7 +322,7 @@ function RequestDetail() {
                 <Text strong>Kime:</Text>
                 <br />
                 <Text>
-                  {ticketData.requester ? `${ticketData.requester.name} ${ticketData.requester.surname}` : "Bilinmeyen"}
+                  {ticketData.assignee ? `${ticketData.assignee.name} ${ticketData.assignee.surname}` : "Atanmamış"}
                 </Text>
                 <br />
                 <Text strong>Email CCs:</Text>
@@ -295,6 +346,30 @@ function RequestDetail() {
                   <Text type="secondary">
                     Bu ticket kapatılmıştır. Yeni mesaj gönderilemez.
                   </Text>
+                </div>
+              ) : !canRespond() ? (
+                <div style={{ 
+                  padding: "16px", 
+                  backgroundColor: "#fff7e6", 
+                  borderRadius: "6px",
+                  textAlign: "center",
+                  color: "#666"
+                }}>
+                  <Text type="secondary">
+                    Bu ticket'ı yanıtlamak için önce devralmanız gerekmektedir.
+                  </Text>
+                  {canAssign() && (
+                    <div style={{ marginTop: "12px" }}>
+                      <Button 
+                        type="primary"
+                        icon={<UserOutlined />}
+                        onClick={() => handleAssignTicket()}
+                        loading={assigning}
+                      >
+                        Ticket'ı Devral
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>

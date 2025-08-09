@@ -29,6 +29,10 @@ export const API_ENDPOINTS = {
   TICKET_FOLLOWERS_REMOVE: (id, userId) => `/Ticket/${id}/followers/${userId}`,
   MESSAGE_ATTACHMENTS: (messageId) => `/Ticket/messages/${messageId}/attachments`,
   
+  // Teknisyen endpoints
+  TICKET_ALL_OPEN: '/Ticket/all-open',
+  TICKET_ASSIGN: (id) => `/Ticket/${id}/assign`,
+  
   // Other endpoints
   NOTIFICATIONS: '/notifications',
   UPLOAD_FILE: '/upload',

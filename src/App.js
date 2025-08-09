@@ -7,6 +7,7 @@ import NewRequest from "./components/NewRequest"
 import EditProfile from "./components/EditProfile"
 import Login from "./components/Login"
 import Register from "./components/Register"
+import TechnicianTicketList from "./components/TechnicianTicketList"
 
 const theme = {
   token: {
@@ -28,6 +29,7 @@ function App() {
             <Route path="/requests/:id" element={<Layout><RequestDetail /></Layout>} />
             <Route path="/new-request" element={<Layout><NewRequest /></Layout>} />
             <Route path="/profile" element={<Layout><EditProfile /></Layout>} />
+            <Route path="/technician-tickets" element={<Layout><TechnicianTicketList /></Layout>} />
           </Routes>
         </Router>
       </AntApp>

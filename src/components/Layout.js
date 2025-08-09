@@ -34,6 +34,14 @@ function Layout({ children }) {
       icon: <HomeOutlined style={{ fontSize: "20px" }} />,
       label: "Requests",
     },
+    // Teknisyen rolü için ek menü
+    ...(currentUser?.role === "technician" || currentUser?.role === "admin" ? [
+      {
+        key: "/technician-tickets",
+        icon: <UserOutlined style={{ fontSize: "20px" }} />,
+        label: "Açık Ticket'lar",
+      }
+    ] : []),
     {
       key: "/profile",
       icon: <SettingOutlined style={{ fontSize: "20px" }} />,
