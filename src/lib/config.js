@@ -1,13 +1,17 @@
 // API Base URL
-export const BASE_URL = process.env.REACT_APP_API_URL || 'http://104.247.173.83:8006';
+export const BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8006';
 
 // API Endpoints
 export const API_ENDPOINTS = {
+  // Health check
+  HEALTH: '/health',
+  
   // Auth endpoints
   LOGIN: '/User/login',
   REGISTER: '/User/register',
   LOGOUT: '/User/logout',
   REFRESH_TOKEN: '/User/refresh',
+  TEST: '/User/test',
   
   // User endpoints
   USER_PROFILE: '/User/profile',
@@ -20,6 +24,8 @@ export const API_ENDPOINTS = {
   REQUEST_STATUS: (id) => `/requests/${id}/status`,
   
   // Ticket endpoints
+  CREATE_TICKET: '/Ticket/create',
+  MY_REQUESTS: '/Ticket/my-requests',
   TICKET_DETAIL: (id) => `/Ticket/${id}/detail`,
   TICKET_MESSAGES: (id) => `/Ticket/${id}/messages`,
   TICKET_UPDATE: (id) => `/Ticket/${id}`,

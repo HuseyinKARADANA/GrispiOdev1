@@ -350,7 +350,20 @@ function TechnicianTicketList() {
           <Search
             placeholder="Ticket'larda ara..."
             allowClear
-            enterButton={<SearchOutlined />}
+            enterButton={
+              <div style={{
+                backgroundColor: "#632d91",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                width: "100%",
+                borderRadius: "0 6px 6px 0"
+              }}>
+                <SearchOutlined style={{ color: "white", fontSize: "16px" }} />
+              </div>
+            }
             size="middle"
             onSearch={handleSearch}
             onChange={(e) => handleSearch(e.target.value)}

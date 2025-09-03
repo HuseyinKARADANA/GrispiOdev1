@@ -137,15 +137,15 @@ function Layout({ children }) {
                 cursor: "pointer",
                 padding: "8px 12px",
                 borderRadius: "8px",
-                backgroundColor: "rgba(114, 46, 209, 0.05)",
-                border: "1px solid rgba(114, 46, 209, 0.1)",
+                backgroundColor: "rgba(99, 45, 145, 0.05)",
+                border: "1px solid rgba(99, 45, 145, 0.1)",
                 transition: "all 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(114, 46, 209, 0.1)"
+                e.currentTarget.style.backgroundColor = "rgba(99, 45, 145, 0.1)"
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(114, 46, 209, 0.05)"
+                e.currentTarget.style.backgroundColor = "rgba(99, 45, 145, 0.05)"
               }}
             >
               {/* Kullanıcı Bilgileri */}
@@ -170,7 +170,7 @@ function Layout({ children }) {
               </div>
               
               {/* Avatar */}
-              <Avatar style={{ backgroundColor: "#722ed1" }}>
+              <Avatar style={{ backgroundColor: "#632d91" }}>
                 {currentUser?.name?.charAt(0) || 'U'}
               </Avatar>
             </div>
@@ -182,7 +182,7 @@ function Layout({ children }) {
         <Sider
           width={80}
           style={{
-            background: "#722ed1",
+            background: "#632d91",
             position: "fixed",
             height: "100vh",
             left: 0,
@@ -194,26 +194,31 @@ function Layout({ children }) {
             {/* Logo */}
             <div style={{ 
               display: "flex", 
+              flexDirection: "column",
               justifyContent: "center", 
               alignItems: "center", 
               height: "64px",
               marginBottom: "24px"
             }}>
+              <img 
+                src="/grispiglobal_logo.jpg" 
+                alt="Grispi Global Logo"
+                style={{
+                  width: "60px",
+                  height: "40px",
+                  objectFit: "contain",
+                  borderRadius: "10px",
+                  marginBottom: "4px"
+                }}
+              />
               <div style={{
-                width: "60px",
-                height: "40px",
-                borderRadius: "10px",
-                background: "linear-gradient(45deg,rgb(255, 93, 34),rgb(246, 183, 112))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 color: "white",
-                fontSize: "12px",
+                fontSize: "10px",
                 fontWeight: "bold",
                 textAlign: "center",
                 lineHeight: "1.2"
               }}>
-                Yolcu<br />360
+                Grispi
               </div>
             </div>
 

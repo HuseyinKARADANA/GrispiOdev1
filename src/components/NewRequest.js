@@ -26,7 +26,7 @@ import {
   RedoOutlined
 } from "@ant-design/icons"
 import { apiGet } from "../lib/api"
-import { BASE_URL, getAuthToken } from "../lib/config"
+import { BASE_URL, getAuthToken, API_ENDPOINTS } from "../lib/config"
 import ReactQuill from "react-quill"
 import "react-quill/dist/quill.snow.css"
 
@@ -98,6 +98,12 @@ function NewRequest() {
   }
 
   const onFinish = async (values) => {
+    // ReactQuill validation
+    if (!description || description.trim().length < 10) {
+      message.error("Açıklama en az 10 karakter olmalıdır");
+      return;
+    }
+
     setLoading(true)
     try {
       const formData = new FormData();
@@ -130,7 +136,8 @@ function NewRequest() {
         message.error(data.error || "Talep oluşturulurken hata oluştu");
       }
     } catch (error) {
-      message.error("Talep oluşturulurken hata oluştu");
+      console.error("Ticket oluşturma hatası:", error)
+      message.error(error.message || "Talep oluşturulurken hata oluştu");
     } finally {
       setLoading(false)
     }
@@ -255,12 +262,11 @@ function NewRequest() {
                 </Space>
               }
               name="description"
-              rules={[{ required: true, message: "Please enter a description" }]}
+              rules={[
+                { required: true, message: "Please enter a description" },
+                { min: 10, message: "Description must be at least 10 characters" }
+              ]}
               style={{ marginBottom: 18 }}
-              // ReactQuill ile Form entegrasyonu için valuePropName ve trigger ekleniyor
-              valuePropName="value"
-              getValueFromEvent={val => val}
-              trigger="onChange"
             >
               <ReactQuill
                 value={description}
@@ -288,8 +294,8 @@ function NewRequest() {
                   loading={loading} 
                   style={{ 
                     minWidth: "120px",
-                    backgroundColor: "#722ed1",
-                    borderColor: "#722ed1",
+                    backgroundColor: "#632d91",
+                    borderColor: "#632d91",
                     borderRadius: "5px",
                     height: "36px",
                     fontSize: "15px",

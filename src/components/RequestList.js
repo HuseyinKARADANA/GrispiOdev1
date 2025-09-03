@@ -5,6 +5,7 @@ import { Table, Input, Select, Tag, Space, Card, Tabs, Button, message } from "a
 import { SearchOutlined } from "@ant-design/icons"
 import { useNavigate } from "react-router-dom"
 import { apiGet } from "../lib/api"
+import { API_ENDPOINTS } from "../lib/config"
 
 const { Search } = Input
 const { Option } = Select
@@ -34,7 +35,8 @@ function RequestList() {
         total: data.pagination.total_items
       })
     } catch (err) {
-      message.error("Ticketlar yüklenemedi")
+      console.error("Ticket yükleme hatası:", err)
+      message.error(err.message || "Ticketlar yüklenemedi")
     } finally {
       setLoading(false)
     }
@@ -192,40 +194,46 @@ function RequestList() {
       dataIndex: "ticket_id",
       key: "ticket_id",
       width: 100,
-      render: (ticketId, record) => (
-        <Button 
-          type="link" 
-          onClick={() => navigate(`/requests/${record.ticket_id.replace('#', '')}`)} 
-          style={{ 
-            padding: 0, 
-            height: "auto",
-            color: "#722ed1",
+      render: (ticketId, record) => {
+        const id = ticketId.toString().replace('#', '');
+        return (
+          <Button   
+            type="link" 
+            onClick={() => navigate(`/requests/${id}`)} 
+            style={{ 
+              padding: 0, 
+              height: "auto",
+                          color: "#632d91",
             fontWeight: "500"
           }}
         >
           {ticketId}
         </Button>
-      ),
+        );
+      },
     },
     {
       title: "Subject",
       dataIndex: "subject",
       key: "subject",
-      render: (subject, record) => (
-        <Button
-          type="link"
-          onClick={() => navigate(`/requests/${record.ticket_id.replace('#', '')}`)}
-          style={{ 
-            padding: 0, 
-            height: "auto", 
-            textAlign: "left",
-            color: "#722ed1",
+      render: (subject, record) => {
+        const id = record.ticket_id.toString().replace('#', '');
+        return (
+          <Button
+            type="link"
+            onClick={() => navigate(`/requests/${id}`)}
+            style={{ 
+              padding: 0, 
+              height: "auto", 
+              textAlign: "left",
+                          color: "#632d91",
             fontWeight: "500"
           }}
         >
           {subject}
         </Button>
-      ),
+        );
+      },
     },
     {
       title: "Priority",
@@ -298,7 +306,19 @@ function RequestList() {
             <Search
               placeholder="Search in requests"
               allowClear
-              enterButton={<SearchOutlined />}
+              enterButton={
+                <div style={{
+                  
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                  width: "100%"
+                }}>
+                  <SearchOutlined style={{ color: "white" }} />
+                </div>
+              }
               size="middle"
               onSearch={handleSearch}
               onChange={(e) => handleSearch(e.target.value)}
@@ -386,6 +406,9 @@ function RequestList() {
           index % 2 === 0 ? 'table-row-white' : 'table-row-gray'
         }
         rowKey={record => record.ticket_id}
+        locale={{
+          emptyText: loading ? "Yükleniyor..." : "Henüz hiç ticket oluşturulmamış"
+        }}
       />
 
       <style jsx>{`
@@ -399,11 +422,11 @@ function RequestList() {
           background-color: #f0f0f0 !important;
         }
         .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
-          color: #722ed1 !important;
+          color: #632d91 !important;
           font-weight: 600;
         }
         .ant-tabs-ink-bar {
-          background: #722ed1 !important;
+          background: #632d91 !important;
         }
         .ant-table-thead > tr > th {
           background-color: #fafafa !important;
