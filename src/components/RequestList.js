@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Table, Input, Select, Tag, Space, Card, Tabs, Button, message } from "antd"
+import { Table, Input, Select, Tag, Space, Card, Tabs, Button, message, Pagination } from "antd"
 import { SearchOutlined } from "@ant-design/icons"
 import { useNavigate } from "react-router-dom"
 import { apiGet } from "../lib/api"
@@ -21,6 +21,7 @@ function RequestList() {
   const [activeTab, setActiveTab] = useState("1")
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
+  const [isMobile, setIsMobile] = useState(false)
   const navigate = useNavigate()
 
   // API'den veri çekme fonksiyonu (pagination ile)
@@ -45,6 +46,17 @@ function RequestList() {
   useEffect(() => {
     fetchTickets(pagination.current, pagination.pageSize)
     // eslint-disable-next-line
+  }, [])
+
+  // Ekran boyutu takibi (mobil tespit)
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)")
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener ? mq.addEventListener("change", update) : mq.addListener(update)
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener("change", update) : mq.removeListener(update)
+    }
   }, [])
 
   // Table pagination değiştiğinde API'den yeni veri çek
@@ -291,125 +303,177 @@ function RequestList() {
   ]
 
   return (
-    <div style={{ background: "white", borderRadius: "8px", padding: "24px" }}>
+    <div style={{ background: "white", borderRadius: "8px", padding: isMobile ? "12px" : "24px" }}>
       <Tabs 
         activeKey={activeTab}
         onChange={handleTabChange}
         items={tabItems}
-        style={{ marginBottom: "24px" }}
+        style={{ marginBottom: isMobile ? "12px" : "24px" }}
         tabBarStyle={{
           borderBottom: "1px solid #e9ecef",
-          marginBottom: "24px"
+          marginBottom: isMobile ? "12px" : "24px"
         }}
         tabBarExtraContent={
-          <Space style={{ marginLeft: "auto" }}>
-            <Search
-              placeholder="Search in requests"
-              allowClear
-              enterButton={
-                <div style={{
-                  
-                  color: "white",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "100%",
-                  width: "100%"
-                }}>
-                  <SearchOutlined style={{ color: "white" }} />
-                </div>
-              }
-              size="middle"
-              onSearch={handleSearch}
-              onChange={(e) => handleSearch(e.target.value)}
-              value={searchText}
-              style={{ width: 250 }}
-            />
+          isMobile ? (
+            <div style={{ width: "100%", paddingLeft: 8, paddingRight: 8 }}>
+              <Search
+                placeholder="Search in requests"
+                allowClear
+                enterButton={<SearchOutlined />}
+                size="middle"
+                onSearch={handleSearch}
+                onChange={(e) => handleSearch(e.target.value)}
+                value={searchText}
+                style={{ width: "100%" }}
+              />
+            </div>
+          ) : (
+            <Space style={{ marginLeft: "auto" }}>
+              <Search
+                placeholder="Search in requests"
+                allowClear
+                enterButton={
+                  <div style={{
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                    width: "100%"
+                  }}>
+                    <SearchOutlined style={{ color: "white" }} />
+                  </div>
+                }
+                size="middle"
+                onSearch={handleSearch}
+                onChange={(e) => handleSearch(e.target.value)}
+                value={searchText}
+                style={{ width: 250 }}
+              />
 
-            <Select 
-              placeholder="Status" 
-              style={{ width: 100 }} 
-              allowClear
-              value={statusFilter}
-              onChange={handleStatusFilterChange}
-            >
-              <Option value="open">Open</Option>
-              <Option value="closed">Closed</Option>
-            </Select>
-
-            <Select 
-              placeholder="Priority" 
-              style={{ width: 100 }} 
-              allowClear
-              value={priorityFilter}
-              onChange={handlePriorityFilterChange}
-            >
-              <Option value="high">High</Option>
-              <Option value="normal">Normal</Option>
-              <Option value="low">Low</Option>
-            </Select>
-
-            <Select 
-              placeholder="Category" 
-              style={{ width: 120 }} 
-              allowClear
-              value={categoryFilter}
-              onChange={handleCategoryFilterChange}
-            >
-              <Option value="category1">Category 1</Option>
-              <Option value="category2">Category 2</Option>
-              <Option value="category3">Category 3</Option>
-            </Select>
-
-            <Select 
-              placeholder="Order by" 
-              style={{ width: 120 }} 
-              allowClear
-              value={orderBy}
-              onChange={handleOrderByChange}
-            >
-              <Option value="date">Date</Option>
-              <Option value="priority">Priority</Option>
-              <Option value="status">Status</Option>
-              <Option value="ticketId">Ticket ID</Option>
-            </Select>
-
-            {(searchText || orderBy || statusFilter || priorityFilter || categoryFilter) && (
-              <Button 
-                size="small" 
-                onClick={clearAllFilters}
-                style={{ fontSize: "12px" }}
+              <Select 
+                placeholder="Status" 
+                style={{ width: 100 }} 
+                allowClear
+                value={statusFilter}
+                onChange={handleStatusFilterChange}
               >
-                Clear Filters
-              </Button>
-            )}
-          </Space>
+                <Option value="open">Open</Option>
+                <Option value="closed">Closed</Option>
+              </Select>
+
+              <Select 
+                placeholder="Priority" 
+                style={{ width: 100 }} 
+                allowClear
+                value={priorityFilter}
+                onChange={handlePriorityFilterChange}
+              >
+                <Option value="high">High</Option>
+                <Option value="normal">Normal</Option>
+                <Option value="low">Low</Option>
+              </Select>
+
+              <Select 
+                placeholder="Category" 
+                style={{ width: 120 }} 
+                allowClear
+                value={categoryFilter}
+                onChange={handleCategoryFilterChange}
+              >
+                <Option value="category1">Category 1</Option>
+                <Option value="category2">Category 2</Option>
+                <Option value="category3">Category 3</Option>
+              </Select>
+
+              <Select 
+                placeholder="Order by" 
+                style={{ width: 120 }} 
+                allowClear
+                value={orderBy}
+                onChange={handleOrderByChange}
+              >
+                <Option value="date">Date</Option>
+                <Option value="priority">Priority</Option>
+                <Option value="status">Status</Option>
+                <Option value="ticketId">Ticket ID</Option>
+              </Select>
+
+              {(searchText || orderBy || statusFilter || priorityFilter || categoryFilter) && (
+                <Button 
+                  size="small" 
+                  onClick={clearAllFilters}
+                  style={{ fontSize: "12px" }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </Space>
+          )
         }
       />
 
-      <Table
-        columns={columns}
-        dataSource={filteredData}
-        loading={loading}
-        pagination={{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-        }}
-        onChange={handleTableChange}
-        size="middle"
-        style={{ background: "white" }}
-        rowClassName={(record, index) => 
-          index % 2 === 0 ? 'table-row-white' : 'table-row-gray'
-        }
-        rowKey={record => record.ticket_id}
-        locale={{
-          emptyText: loading ? "Yükleniyor..." : "Henüz hiç ticket oluşturulmamış"
-        }}
-      />
+      {isMobile ? (
+        <>
+          <div className="ticket-card-list">
+            {filteredData.map((item) => {
+              const id = item.ticket_id.toString().replace('#', '')
+              return (
+                <Card key={item.ticket_id} className="ticket-card" bordered>
+                  <div className="ticket-card-header">
+                    <div className={`status-dot ${item.status === 'OPEN' ? 'open' : 'closed'}`}></div>
+                    <span className="ticket-id">{item.ticket_id}</span>
+                    <Tag color={getPriorityColor(item.priority)} className="priority-tag">{item.priority}</Tag>
+                  </div>
+                  <Button type="link" onClick={() => navigate(`/requests/${id}`)} className="ticket-subject">
+                    {item.subject}
+                  </Button>
+                  <div className="ticket-meta">
+                    {item.category && <span className="meta-item">Category: {item.category}</span>}
+                    <span className="meta-item">Updated: {item.update_date}</span>
+                    <span className="meta-item">Created: {item.created_date}</span>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              showSizeChanger
+              showQuickJumper
+              onChange={(page, pageSize) => fetchTickets(page, pageSize)}
+              showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} items`}
+            />
+          </div>
+        </>
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={filteredData}
+          loading={loading}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+          }}
+          onChange={handleTableChange}
+          size="middle"
+          style={{ background: "white" }}
+          rowClassName={(record, index) => 
+            index % 2 === 0 ? 'table-row-white' : 'table-row-gray'
+          }
+          rowKey={record => record.ticket_id}
+          locale={{
+            emptyText: loading ? "Yükleniyor..." : "Henüz hiç ticket oluşturulmamış"
+          }}
+        />
+      )}
 
       <style jsx>{`
         .table-row-white {
@@ -480,6 +544,38 @@ function RequestList() {
         /* Button stilleri */
         .ant-btn {
           color: #333 !important;
+        }
+
+        /* Mobil kart listesi */
+        .ticket-card-list {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        .ticket-card {
+          border: 1px solid #f0f0f0;
+          border-radius: 8px;
+        }
+        .ticket-card-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 4px;
+        }
+        .status-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+        }
+        .status-dot.open { background-color: #ff4d4f; }
+        .status-dot.closed { background-color: #52c41a; }
+        .ticket-id { font-weight: 600; color: #595959; }
+        .priority-tag { border-radius: 4px; margin-left: auto; }
+        .ticket-subject { padding: 0; font-size: 16px; text-align: left; color: #632d91 !important; font-weight: 600; }
+        .ticket-meta { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; color: #595959; font-size: 12px; }
+        .meta-item { background: #fafafa; padding: 2px 6px; border-radius: 4px; }
+        @media (min-width: 769px) {
+          .ticket-card-list { display: none; }
         }
       `}</style>
     </div>

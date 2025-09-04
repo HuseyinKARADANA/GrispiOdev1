@@ -195,23 +195,7 @@ function Login() {
             border: "1px solid #e6f0ff",
           }}
         >
-          <Text type="secondary" style={{ fontSize: "12px" }}>
-            <strong>Demo employee Hesap:</strong>
-            <br />
-            E-posta: krdn35@gmail.com
-            <br />
-            Şifre: Grispi123456
-            <br />
-            <br />
-            <strong>Demo technician Hesap:</strong>
-            <br />
-            E-posta: krdn@gmail.com
-            <br />
-            Şifre: Grispi123456
-            <br />
-            <br />
-            <strong>Not:</strong> Backend'de kayıtlı bir hesap kullanın
-          </Text>
+        
         </div>
       </Card>
 
