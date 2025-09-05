@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Table, Input, Select, Tag, Space, Card, Tabs, Button, message, Pagination } from "antd"
-import { SearchOutlined } from "@ant-design/icons"
+import { Table, Input, Select, Tag, Space, Card, Tabs, Button, message, Pagination, Row, Col, Drawer, Statistic } from "antd"
+import { SearchOutlined, FilterOutlined, ReloadOutlined, PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, UserOutlined } from "@ant-design/icons"
 import { useNavigate } from "react-router-dom"
 import { apiGet } from "../lib/api"
 import { API_ENDPOINTS } from "../lib/config"
@@ -21,6 +21,12 @@ function RequestList() {
   const [activeTab, setActiveTab] = useState("1")
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
+  const [stats, setStats] = useState({
+    openRequests: 0,
+    resolvedRequests: 0,
+    todayOpened: 0,
+    todayResolved: 0
+  })
   const [isMobile, setIsMobile] = useState(false)
   const navigate = useNavigate()
 
@@ -35,6 +41,7 @@ function RequestList() {
         pageSize: data.pagination.per_page,
         total: data.pagination.total_items
       })
+      calculateStats(data.data)
     } catch (err) {
       console.error("Ticket yükleme hatası:", err)
       message.error(err.message || "Ticketlar yüklenemedi")
@@ -43,12 +50,36 @@ function RequestList() {
     }
   }
 
+  // İstatistikleri hesapla
+  const calculateStats = (data) => {
+    const today = new Date().toISOString().split('T')[0]
+    const openRequests = data.filter(item => item.status === 'OPEN').length
+    const resolvedRequests = data.filter(item => item.status === 'CLOSED').length
+    const todayOpened = data.filter(item => {
+      if (!item.created_date) return false
+      const createdDate = item.created_date.split('.').reverse().join('-')
+      return createdDate === today
+    }).length
+    const todayResolved = data.filter(item => {
+      if (!item.update_date) return false
+      const updateDate = item.update_date.split('.').reverse().join('-')
+      return updateDate === today && item.status === 'CLOSED'
+    }).length
+
+    setStats({
+      openRequests,
+      resolvedRequests,
+      todayOpened,
+      todayResolved
+    })
+  }
+
   useEffect(() => {
     fetchTickets(pagination.current, pagination.pageSize)
     // eslint-disable-next-line
   }, [])
 
-  // Ekran boyutu takibi (mobil tespit)
+  // Mobil tespiti için useEffect
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)")
     const update = () => setIsMobile(mq.matches)
@@ -58,6 +89,7 @@ function RequestList() {
       mq.removeEventListener ? mq.removeEventListener("change", update) : mq.removeListener(update)
     }
   }, [])
+
 
   // Table pagination değiştiğinde API'den yeni veri çek
   const handleTableChange = (pag) => {
@@ -127,6 +159,7 @@ function RequestList() {
       filtered.sort((a, b) => {
         switch (orderBy) {
           case "date":
+            if (!a.update_date || !b.update_date) return 0
             return new Date(b.update_date.split('.').reverse().join('-')) - new Date(a.update_date.split('.').reverse().join('-'))
           case "priority":
             const priorityOrder = { HIGH: 3, NORMAL: 2, LOW: 1 }
@@ -175,6 +208,7 @@ function RequestList() {
     setPriorityFilter("")
     setCategoryFilter("")
   }
+
 
   const columns = [
     {
@@ -303,19 +337,56 @@ function RequestList() {
   ]
 
   return (
-    <div style={{ background: "white", borderRadius: "8px", padding: isMobile ? "12px" : "24px" }}>
-      <Tabs 
-        activeKey={activeTab}
-        onChange={handleTabChange}
-        items={tabItems}
-        style={{ marginBottom: isMobile ? "12px" : "24px" }}
-        tabBarStyle={{
-          borderBottom: "1px solid #e9ecef",
-          marginBottom: isMobile ? "12px" : "24px"
+    <>
+    <div style={{ background: "#f8f9fa", minHeight: "100vh", padding: "16px" }}>
+      {/* Dashboard Header */}
+      <div style={{ marginBottom: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "600", color: "#333" }}>Requests</h1>
+            <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: "14px" }}>Ticket yönetim sistemi</p>
+          </div>
+          
+        </div>
+
+       
+      </div>
+
+      {/* Ana İçerik */}
+      <Card 
+        style={{ 
+          borderRadius: "12px", 
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          border: "none"
         }}
-        tabBarExtraContent={
-          isMobile ? (
-            <div style={{ width: "100%", paddingLeft: 8, paddingRight: 8 }}>
+      >
+        {/* Tabs ve Filtreler */}
+        <div style={{ marginBottom: "24px" }}>
+          <Tabs 
+            activeKey={activeTab}
+            onChange={handleTabChange}
+            items={tabItems}
+            style={{ marginBottom: "16px" }}
+            tabBarStyle={{
+              borderBottom: "1px solid #f0f0f0",
+              marginBottom: "16px"
+            }}
+            tabBarExtraContent={
+              <Space>
+                <Button 
+                  icon={<ReloadOutlined />}
+                  onClick={() => fetchTickets(pagination.current, pagination.pageSize)}
+                  style={{ borderRadius: "6px" }}
+                >
+                  Yenile
+                </Button>
+              </Space>
+            }
+          />
+          
+          {/* Arama ve Filtreler */}
+          <Row gutter={[16, 16]} style={{ marginBottom: "16px" }}>
+            <Col xs={24} sm={12} md={8} lg={6}>
               <Search
                 placeholder="Search in requests"
                 allowClear
@@ -326,71 +397,47 @@ function RequestList() {
                 value={searchText}
                 style={{ width: "100%" }}
               />
-            </div>
-          ) : (
-            <Space style={{ marginLeft: "auto" }}>
-              <Search
-                placeholder="Search in requests"
-                allowClear
-                enterButton={
-                  <div style={{
-                    color: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100%",
-                    width: "100%"
-                  }}>
-                    <SearchOutlined style={{ color: "white" }} />
-                  </div>
-                }
-                size="middle"
-                onSearch={handleSearch}
-                onChange={(e) => handleSearch(e.target.value)}
-                value={searchText}
-                style={{ width: 250 }}
-              />
-
+            </Col>
+            <Col xs={12} sm={6} md={4} lg={3}>
               <Select 
                 placeholder="Status" 
-                style={{ width: 100 }} 
+                style={{ width: "100%" }} 
                 allowClear
-                value={statusFilter}
                 onChange={handleStatusFilterChange}
               >
                 <Option value="open">Open</Option>
                 <Option value="closed">Closed</Option>
               </Select>
-
+            </Col>
+            <Col xs={12} sm={6} md={4} lg={3}>
               <Select 
                 placeholder="Priority" 
-                style={{ width: 100 }} 
+                style={{ width: "100%" }} 
                 allowClear
-                value={priorityFilter}
                 onChange={handlePriorityFilterChange}
               >
                 <Option value="high">High</Option>
                 <Option value="normal">Normal</Option>
                 <Option value="low">Low</Option>
               </Select>
-
+            </Col>
+            <Col xs={12} sm={6} md={4} lg={3}>
               <Select 
                 placeholder="Category" 
-                style={{ width: 120 }} 
+                style={{ width: "100%" }} 
                 allowClear
-                value={categoryFilter}
                 onChange={handleCategoryFilterChange}
               >
                 <Option value="category1">Category 1</Option>
                 <Option value="category2">Category 2</Option>
                 <Option value="category3">Category 3</Option>
               </Select>
-
+            </Col>
+            <Col xs={12} sm={6} md={4} lg={3}>
               <Select 
                 placeholder="Order by" 
-                style={{ width: 120 }} 
+                style={{ width: "100%" }} 
                 allowClear
-                value={orderBy}
                 onChange={handleOrderByChange}
               >
                 <Option value="date">Date</Option>
@@ -398,84 +445,207 @@ function RequestList() {
                 <Option value="status">Status</Option>
                 <Option value="ticketId">Ticket ID</Option>
               </Select>
-
-              {(searchText || orderBy || statusFilter || priorityFilter || categoryFilter) && (
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              {searchText && (
                 <Button 
-                  size="small" 
                   onClick={clearAllFilters}
-                  style={{ fontSize: "12px" }}
+                  style={{ width: "100%" }}
                 >
                   Clear Filters
                 </Button>
               )}
-            </Space>
-          )
-        }
-      />
+            </Col>
+          </Row>
+        </div>
 
-      {isMobile ? (
-        <>
-          <div className="ticket-card-list">
+        {/* Desktop Table */}
+        {!isMobile && (
+          <Table
+            columns={columns}
+            dataSource={filteredData}
+            loading={loading}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+              style: { marginTop: "16px" }
+            }}
+            onChange={handleTableChange}
+            size="middle"
+            style={{ background: "white" }}
+            rowClassName={(record, index) => 
+              index % 2 === 0 ? 'table-row-white' : 'table-row-gray'
+            }
+            rowKey={record => record.ticket_id}
+            locale={{
+              emptyText: loading ? "Yükleniyor..." : "Henüz hiç ticket oluşturulmamış"
+            }}
+          />
+        )}
+
+        {/* Mobile Cards */}
+        {isMobile && (
+          <div style={{ marginTop: "16px" }}>
             {filteredData.map((item) => {
               const id = item.ticket_id.toString().replace('#', '')
               return (
-                <Card key={item.ticket_id} className="ticket-card" bordered>
-                  <div className="ticket-card-header">
-                    <div className={`status-dot ${item.status === 'OPEN' ? 'open' : 'closed'}`}></div>
-                    <span className="ticket-id">{item.ticket_id}</span>
-                    <Tag color={getPriorityColor(item.priority)} className="priority-tag">{item.priority}</Tag>
+                <Card 
+                  key={item.ticket_id} 
+                  className="mobile-card"
+                  style={{ 
+                    marginBottom: "12px",
+                    borderRadius: "8px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    border: "none"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div 
+                        style={{
+                          width: "12px",
+                          height: "12px",
+                          borderRadius: "50%",
+                          backgroundColor: item.status === 'OPEN' ? '#ff4d4f' : '#52c41a'
+                        }}
+                      />
+                      <span style={{ fontWeight: "600", color: "#595959", fontSize: "14px" }}>
+                        {item.ticket_id}
+                      </span>
+                    </div>
+                    {item.priority && (
+                      <Tag color={getPriorityColor(item.priority)} style={{ fontSize: "12px", borderRadius: "4px" }}>
+                        {item.priority}
+                      </Tag>
+                    )}
                   </div>
-                  <Button type="link" onClick={() => navigate(`/requests/${id}`)} className="ticket-subject">
+                  
+                  <Button 
+                    type="link" 
+                    onClick={() => navigate(`/requests/${id}`)}
+                    style={{ 
+                      padding: 0, 
+                      fontSize: "16px", 
+                      textAlign: "left", 
+                      color: "#632d91", 
+                      fontWeight: "600", 
+                      lineHeight: "1.4",
+                      marginBottom: "8px",
+                      display: "block",
+                      width: "100%",
+                      height: "auto",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    }}
+                    title={item.subject}
+                  >
                     {item.subject}
                   </Button>
-                  <div className="ticket-meta">
-                    {item.category && <span className="meta-item">Category: {item.category}</span>}
-                    <span className="meta-item">Updated: {item.update_date}</span>
-                    <span className="meta-item">Created: {item.created_date}</span>
+                  
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", color: "#595959", fontSize: "12px" }}>
+                    {item.category && (
+                      <span className="meta-span" style={{ 
+                        background: "#fafafa", 
+                        padding: "4px 8px", 
+                        borderRadius: "4px",
+                        display: "inline-block"
+                      }}>
+                        Category: {item.category}
+                      </span>
+                    )}
+                    <span className="meta-span" style={{ 
+                      background: "#fafafa", 
+                      padding: "4px 8px", 
+                      borderRadius: "4px",
+                      display: "inline-block"
+                    }}>
+                      Updated: {item.update_date}
+                    </span>
+                    <span className="meta-span" style={{ 
+                      background: "#fafafa", 
+                      padding: "4px 8px", 
+                      borderRadius: "4px",
+                      display: "inline-block"
+                    }}>
+                      Created: {item.created_date}
+                    </span>
                   </div>
                 </Card>
               )
             })}
+            
+            {/* Mobile Pagination */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: "16px" }}>
+              <Pagination
+                current={pagination.current}
+                pageSize={pagination.pageSize}
+                total={pagination.total}
+                showSizeChanger={false}
+                showQuickJumper={false}
+                onChange={(page, pageSize) => fetchTickets(page, pageSize)}
+                showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
+                size="small"
+              />
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
-            <Pagination
-              current={pagination.current}
-              pageSize={pagination.pageSize}
-              total={pagination.total}
-              showSizeChanger
-              showQuickJumper
-              onChange={(page, pageSize) => fetchTickets(page, pageSize)}
-              showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} items`}
-            />
-          </div>
-        </>
-      ) : (
-        <Table
-          columns={columns}
-          dataSource={filteredData}
-          loading={loading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-          }}
-          onChange={handleTableChange}
-          size="middle"
-          style={{ background: "white" }}
-          rowClassName={(record, index) => 
-            index % 2 === 0 ? 'table-row-white' : 'table-row-gray'
-          }
-          rowKey={record => record.ticket_id}
-          locale={{
-            emptyText: loading ? "Yükleniyor..." : "Henüz hiç ticket oluşturulmamış"
-          }}
-        />
-      )}
+        )}
+
+      </Card>
 
       <style jsx>{`
+        /* Tab Styles */
+        .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+          color: #632d91 !important;
+          font-weight: 600;
+        }
+        .ant-tabs-ink-bar {
+          background: #632d91 !important;
+        }
+        
+        /* Dropdown Styles */
+        .ant-select-dropdown {
+          background-color: white !important;
+          border: 1px solid #d9d9d9 !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+        .ant-select-item {
+          color: #333 !important;
+          background-color: white !important;
+        }
+        .ant-select-item:hover {
+          background-color: #f5f5f5 !important;
+        }
+        .ant-select-item-option-selected {
+          background-color: #e6f7ff !important;
+          color: #333 !important;
+        }
+        .ant-select-selection-item {
+          color: #333 !important;
+        }
+        .ant-select-selection-placeholder {
+          color: #bfbfbf !important;
+        }
+        
+        /* Input Styles */
+        .ant-input {
+          background-color: white !important;
+          color: #333 !important;
+        }
+        .ant-input::placeholder {
+          color: #bfbfbf !important;
+        }
+        
+        /* Button Styles */
+        .ant-btn {
+          color: #333 !important;
+        }
+
+        /* Table Styles */
         .table-row-white {
           background-color: white;
         }
@@ -484,13 +654,6 @@ function RequestList() {
         }
         .ant-table-tbody > tr:hover > td {
           background-color: #f0f0f0 !important;
-        }
-        .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
-          color: #632d91 !important;
-          font-weight: 600;
-        }
-        .ant-tabs-ink-bar {
-          background: #632d91 !important;
         }
         .ant-table-thead > tr > th {
           background-color: #fafafa !important;
@@ -502,83 +665,56 @@ function RequestList() {
           border-bottom: 1px solid #f0f0f0 !important;
         }
         
-        /* Dropdown menü stilleri */
-        .ant-select-dropdown {
-          background-color: white !important;
-          border: 1px solid #d9d9d9 !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        /* Card Styles */
+        .mobile-card {
+          transition: all 0.3s ease;
+        }
+        .mobile-card:hover {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+          transform: translateY(-2px);
         }
         
-        .ant-select-item {
-          color: #333 !important;
-          background-color: white !important;
+        /* Text Overflow Styles */
+        .mobile-card .ant-btn {
+          max-width: 100% !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
         }
         
-        .ant-select-item:hover {
-          background-color: #f5f5f5 !important;
+        .mobile-card .meta-span {
+          max-width: calc(50% - 3px) !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
         }
         
-        .ant-select-item-option-selected {
-          background-color: #e6f7ff !important;
-          color: #333 !important;
-        }
-        
-        .ant-select-selection-item {
-          color: #333 !important;
-        }
-        
-        .ant-select-selection-placeholder {
-          color: #bfbfbf !important;
-        }
-        
-        /* Search input stilleri */
-        .ant-input {
-          background-color: white !important;
-          color: #333 !important;
-        }
-        
-        .ant-input::placeholder {
-          color: #bfbfbf !important;
-        }
-        
-        /* Button stilleri */
-        .ant-btn {
-          color: #333 !important;
-        }
-
-        /* Mobil kart listesi */
-        .ticket-card-list {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 12px;
-        }
-        .ticket-card {
-          border: 1px solid #f0f0f0;
-          border-radius: 8px;
-        }
-        .ticket-card-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 4px;
-        }
-        .status-dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-        }
-        .status-dot.open { background-color: #ff4d4f; }
-        .status-dot.closed { background-color: #52c41a; }
-        .ticket-id { font-weight: 600; color: #595959; }
-        .priority-tag { border-radius: 4px; margin-left: auto; }
-        .ticket-subject { padding: 0; font-size: 16px; text-align: left; color: #632d91 !important; font-weight: 600; }
-        .ticket-meta { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; color: #595959; font-size: 12px; }
-        .meta-item { background: #fafafa; padding: 2px 6px; border-radius: 4px; }
-        @media (min-width: 769px) {
-          .ticket-card-list { display: none; }
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+          .ant-statistic-content {
+            font-size: 20px !important;
+          }
+          .ant-card {
+            margin-bottom: 12px !important;
+          }
+          .ant-pagination {
+            text-align: center;
+          }
+          .ant-pagination-item {
+            min-width: 32px;
+          }
+          .ant-pagination-total-text {
+            font-size: 12px;
+          }
+          
+          /* Mobile text overflow */
+          .mobile-card .meta-span {
+            max-width: calc(100% - 6px) !important;
+          }
         }
       `}</style>
     </div>
+    </>
   )
 }
 
