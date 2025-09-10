@@ -14,6 +14,7 @@ function EditProfile() {
   const [isEditingAddress, setIsEditingAddress] = useState(false)
   const [isEditingPassword, setIsEditingPassword] = useState(false)
   const [userRole, setUserRole] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
 
   // Orijinal veriler (örnek)
   const [personalInfo, setPersonalInfo] = useState({
@@ -85,6 +86,17 @@ function EditProfile() {
     fetchProfile();
     // eslint-disable-next-line
   }, []);
+
+  // Mobil tespiti için useEffect
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)")
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener ? mq.addEventListener("change", update) : mq.addListener(update)
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener("change", update) : mq.removeListener(update)
+    }
+  }, [])
 
   // Kişisel Bilgi Edit
   const handleEditPersonal = () => {
@@ -173,12 +185,18 @@ function EditProfile() {
       background: "#f5f5f5",
       display: "flex",
       alignItems: "center",
-      justifyContent: "center"
+      justifyContent: "center",
+      width: "100%",
+      padding: isMobile ? "8px" : "16px"
     }}>
-      <div style={{ width: 1000, maxWidth: "98vw", margin: "16px 0" }}>
+      <div style={{ 
+        width: isMobile ? "100%" : 1000, 
+        maxWidth: "98vw", 
+        margin: isMobile ? "0" : "16px 0" 
+      }}>
         <Card style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)", padding: 0, border: "1.5px solid #eee" }} bodyStyle={{ padding: 0 }}>
           {/* Üst Profil Alanı */}
-          <div style={{ display: "flex", alignItems: "center", padding: "20px 24px 0 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", padding: isMobile ? "16px 16px 0 16px" : "20px 24px 0 24px" }}>
             <div style={{ position: "relative" }}>
               <div style={{
                 width: 80,
@@ -210,7 +228,7 @@ function EditProfile() {
             form={form}
             layout="vertical"
             initialValues={initialValues}
-            style={{ padding: "20px 24px 0 24px" }}
+            style={{ padding: isMobile ? "16px 16px 0 16px" : "20px 24px 0 24px" }}
           >
             {/* Personal Information */}
             <Card style={{ borderRadius: 8, border: "1.5px solid #eee", marginBottom: 16 }} bodyStyle={{ padding: 16, paddingBottom: 6 }}>
@@ -229,7 +247,7 @@ function EditProfile() {
                 </div>
               </div>
               <Row gutter={20}>
-                <Col span={12}>
+                <Col xs={24} sm={24} md={12}>
                   <Form.Item label="First Name" name="firstName" style={{ marginBottom: 8 }}>
                     <Input
                       value={isEditingPersonal ? personalInfoDraft.firstName : personalInfo.firstName}
@@ -253,7 +271,7 @@ function EditProfile() {
                     </>
                   )}
                 </Col>
-                <Col span={12}>
+                <Col xs={24} sm={24} md={12}>
                   <Form.Item label="Last Name" name="lastName" style={{ marginBottom: 8 }}>
                     <Input disabled={!isEditingPersonal} size="middle" style={{ borderRadius: 6, height: 32 }} />
                   </Form.Item>
@@ -284,7 +302,7 @@ function EditProfile() {
                 </div>
               </div>
               <Row gutter={20}>
-                <Col span={12}>
+                <Col xs={24} sm={24} md={12}>
                   <Form.Item label="Country" name="country" style={{ marginBottom: 8 }}>
                     <Input
                       value={isEditingAddress ? addressDraft.country : address.country}
@@ -304,7 +322,7 @@ function EditProfile() {
                     />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} sm={24} md={12}>
                   <Form.Item label="City" name="city" style={{ marginBottom: 8 }}>
                     <Input
                       value={isEditingAddress ? addressDraft.city : address.city}
@@ -344,7 +362,7 @@ function EditProfile() {
                 </div>
               </div>
               <Row gutter={20}>
-                <Col span={12}>
+                <Col xs={24} sm={24} md={12}>
                   <Form.Item label="Current Password" name="currentPassword" style={{ marginBottom: 8 }}>
                     <Input.Password
                       value={passwordDraft.current}
@@ -360,9 +378,35 @@ function EditProfile() {
 
             {/* Butonlar */}
             {(isEditingPersonal || isEditingAddress || isEditingPassword) && (
-              <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 32, marginBottom: 32 }}>
-                <Button onClick={handleUndoAll} style={{ borderColor: "#722ed1", color: "#722ed1" }}>Undo Changes</Button>
-                <Button type="primary" onClick={handleSaveAll} style={{ background: "#722ed1", borderColor: "#722ed1" }}>Save Changes</Button>
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "center", 
+                gap: 16, 
+                marginTop: 32, 
+                marginBottom: 32,
+                flexDirection: isMobile ? "column" : "row"
+              }}>
+                <Button 
+                  onClick={handleUndoAll} 
+                  style={{ 
+                    borderColor: "#722ed1", 
+                    color: "#722ed1",
+                    width: isMobile ? "100%" : "auto"
+                  }}
+                >
+                  Undo Changes
+                </Button>
+                <Button 
+                  type="primary" 
+                  onClick={handleSaveAll} 
+                  style={{ 
+                    background: "#722ed1", 
+                    borderColor: "#722ed1",
+                    width: isMobile ? "100%" : "auto"
+                  }}
+                >
+                  Save Changes
+                </Button>
               </div>
             )}
           </Form>

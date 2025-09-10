@@ -186,17 +186,7 @@ function Login() {
           </Link>
         </div>
 
-        <div
-          style={{
-            marginTop: "24px",
-            padding: "16px",
-            background: "#f6f8ff",
-            borderRadius: "8px",
-            border: "1px solid #e6f0ff",
-          }}
-        >
-        
-        </div>
+       
       </Card>
 
       <style jsx>{`

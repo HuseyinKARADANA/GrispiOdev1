@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Table, Input, Select, Tag, Space, Card, Tabs, Button, message, Pagination, Row, Col, Drawer, Statistic } from "antd"
+import { Table, Input, Select, Tag, Space, Card, Tabs, Button, message, Pagination, Row, Col, Drawer, Statistic, Dropdown, Menu } from "antd"
 import { SearchOutlined, FilterOutlined, ReloadOutlined, PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, UserOutlined } from "@ant-design/icons"
 import { useNavigate } from "react-router-dom"
 import { apiGet } from "../lib/api"
@@ -28,6 +28,8 @@ function RequestList() {
     todayResolved: 0
   })
   const [isMobile, setIsMobile] = useState(false)
+  const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
+  const [tabsDropdownVisible, setTabsDropdownVisible] = useState(false)
   const navigate = useNavigate()
 
   // API'den veri çekme fonksiyonu (pagination ile)
@@ -209,6 +211,22 @@ function RequestList() {
     setCategoryFilter("")
   }
 
+  const showFilterDrawer = () => {
+    setFilterDrawerVisible(true)
+  }
+
+  const hideFilterDrawer = () => {
+    setFilterDrawerVisible(false)
+  }
+
+  const showTabsDropdown = () => {
+    setTabsDropdownVisible(true)
+  }
+
+  const hideTabsDropdown = () => {
+    setTabsDropdownVisible(false)
+  }
+
 
   const columns = [
     {
@@ -338,12 +356,17 @@ function RequestList() {
 
   return (
     <>
-    <div style={{ background: "#f8f9fa", minHeight: "100vh", padding: "16px" }}>
+    <div style={{ 
+      background: "#f8f9fa", 
+      minHeight: "100vh", 
+      width: "100%",
+      padding: isMobile ? "8px" : "16px"
+    }}>
       {/* Dashboard Header */}
       <div style={{ marginBottom: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "600", color: "#333" }}>Requests</h1>
+            <h1 style={{ margin: 0, fontSize: isMobile ? "24px" : "28px", fontWeight: "600", color: "#333" }}>Requests</h1>
             <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: "14px" }}>Ticket yönetim sistemi</p>
           </div>
           
@@ -357,36 +380,86 @@ function RequestList() {
         style={{ 
           borderRadius: "12px", 
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          border: "none"
+          border: "none",
+          width: "100%"
         }}
       >
         {/* Tabs ve Filtreler */}
         <div style={{ marginBottom: "24px" }}>
-          <Tabs 
-            activeKey={activeTab}
-            onChange={handleTabChange}
-            items={tabItems}
-            style={{ marginBottom: "16px" }}
-            tabBarStyle={{
-              borderBottom: "1px solid #f0f0f0",
-              marginBottom: "16px"
-            }}
-            tabBarExtraContent={
-              <Space>
+          {/* Desktop Tabs */}
+          {!isMobile && (
+            <Tabs 
+              activeKey={activeTab}
+              onChange={handleTabChange}
+              items={tabItems}
+              style={{ marginBottom: "16px" }}
+              tabBarStyle={{
+                borderBottom: "1px solid #f0f0f0",
+                marginBottom: "16px"
+              }}
+              tabBarExtraContent={
+                <Space>
+                  <Button 
+                    icon={<ReloadOutlined />}
+                    onClick={() => fetchTickets(pagination.current, pagination.pageSize)}
+                    style={{ borderRadius: "6px" }}
+                    size="middle"
+                  >
+                    Yenile
+                  </Button>
+                </Space>
+              }
+              size="middle"
+              type="line"
+            />
+          )}
+          
+          {/* Mobile Tabs Dropdown */}
+          {isMobile && (
+            <div style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+              <Dropdown
+                menu={{
+                  items: tabItems.map(item => ({
+                    key: item.key,
+                    label: item.label,
+                    onClick: () => {
+                      handleTabChange(item.key)
+                      hideTabsDropdown()
+                    }
+                  }))
+                }}
+                open={tabsDropdownVisible}
+                onOpenChange={setTabsDropdownVisible}
+                trigger={['click']}
+                placement="bottomLeft"
+              >
                 <Button 
-                  icon={<ReloadOutlined />}
-                  onClick={() => fetchTickets(pagination.current, pagination.pageSize)}
-                  style={{ borderRadius: "6px" }}
+                  style={{ 
+                    borderRadius: "6px",
+                    border: "1px solid #d9d9d9",
+                    background: "white",
+                    color: "#333",
+                    flex: 1,
+                    width: "100%"
+                  }}
                 >
-                  Yenile
+                  {tabItems.find(item => item.key === activeTab)?.label || "My Requests"}
+                  <span style={{ marginLeft: "8px" }}>▼</span>
                 </Button>
-              </Space>
-            }
-          />
+              </Dropdown>
+              
+              <Button 
+                icon={<ReloadOutlined />}
+                onClick={() => fetchTickets(pagination.current, pagination.pageSize)}
+                style={{ borderRadius: "6px", flexShrink: 0 }}
+                size="small"
+              />
+            </div>
+          )}
           
           {/* Arama ve Filtreler */}
           <Row gutter={[16, 16]} style={{ marginBottom: "16px" }}>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col xs={24} sm={24} md={8} lg={6}>
               <Search
                 placeholder="Search in requests"
                 allowClear
@@ -398,64 +471,84 @@ function RequestList() {
                 style={{ width: "100%" }}
               />
             </Col>
-            <Col xs={12} sm={6} md={4} lg={3}>
-              <Select 
-                placeholder="Status" 
-                style={{ width: "100%" }} 
-                allowClear
-                onChange={handleStatusFilterChange}
-              >
-                <Option value="open">Open</Option>
-                <Option value="closed">Closed</Option>
-              </Select>
-            </Col>
-            <Col xs={12} sm={6} md={4} lg={3}>
-              <Select 
-                placeholder="Priority" 
-                style={{ width: "100%" }} 
-                allowClear
-                onChange={handlePriorityFilterChange}
-              >
-                <Option value="high">High</Option>
-                <Option value="normal">Normal</Option>
-                <Option value="low">Low</Option>
-              </Select>
-            </Col>
-            <Col xs={12} sm={6} md={4} lg={3}>
-              <Select 
-                placeholder="Category" 
-                style={{ width: "100%" }} 
-                allowClear
-                onChange={handleCategoryFilterChange}
-              >
-                <Option value="category1">Category 1</Option>
-                <Option value="category2">Category 2</Option>
-                <Option value="category3">Category 3</Option>
-              </Select>
-            </Col>
-            <Col xs={12} sm={6} md={4} lg={3}>
-              <Select 
-                placeholder="Order by" 
-                style={{ width: "100%" }} 
-                allowClear
-                onChange={handleOrderByChange}
-              >
-                <Option value="date">Date</Option>
-                <Option value="priority">Priority</Option>
-                <Option value="status">Status</Option>
-                <Option value="ticketId">Ticket ID</Option>
-              </Select>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              {searchText && (
+            
+            {/* Desktop Filtreler */}
+            {!isMobile && (
+              <>
+                <Col xs={24} sm={12} md={4} lg={3}>
+                  <Select 
+                    placeholder="Status" 
+                    style={{ width: "100%" }} 
+                    allowClear
+                    onChange={handleStatusFilterChange}
+                  >
+                    <Option value="open">Open</Option>
+                    <Option value="closed">Closed</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} md={4} lg={3}>
+                  <Select 
+                    placeholder="Priority" 
+                    style={{ width: "100%" }} 
+                    allowClear
+                    onChange={handlePriorityFilterChange}
+                  >
+                    <Option value="high">High</Option>
+                    <Option value="normal">Normal</Option>
+                    <Option value="low">Low</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} md={4} lg={3}>
+                  <Select 
+                    placeholder="Category" 
+                    style={{ width: "100%" }} 
+                    allowClear
+                    onChange={handleCategoryFilterChange}
+                  >
+                    <Option value="category1">Category 1</Option>
+                    <Option value="category2">Category 2</Option>
+                    <Option value="category3">Category 3</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} md={4} lg={3}>
+                  <Select 
+                    placeholder="Order by" 
+                    style={{ width: "100%" }} 
+                    allowClear
+                    onChange={handleOrderByChange}
+                  >
+                    <Option value="date">Date</Option>
+                    <Option value="priority">Priority</Option>
+                    <Option value="status">Status</Option>
+                    <Option value="ticketId">Ticket ID</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={24} md={8} lg={6}>
+                  {searchText && (
+                    <Button 
+                      onClick={clearAllFilters}
+                      style={{ width: "100%" }}
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+                </Col>
+              </>
+            )}
+            
+            {/* Mobile Filter Button */}
+            {isMobile && (
+              <Col xs={24}>
                 <Button 
-                  onClick={clearAllFilters}
+                  icon={<FilterOutlined />}
+                  onClick={showFilterDrawer}
                   style={{ width: "100%" }}
+                  size="middle"
                 >
-                  Clear Filters
+                  Filtreler
                 </Button>
-              )}
-            </Col>
+              </Col>
+            )}
           </Row>
         </div>
 
@@ -489,7 +582,7 @@ function RequestList() {
 
         {/* Mobile Cards */}
         {isMobile && (
-          <div style={{ marginTop: "16px" }}>
+          <div style={{ marginTop: "16px", padding: "0 4px" }}>
             {filteredData.map((item) => {
               const id = item.ticket_id.toString().replace('#', '')
               return (
@@ -497,10 +590,11 @@ function RequestList() {
                   key={item.ticket_id} 
                   className="mobile-card"
                   style={{ 
-                    marginBottom: "12px",
+                    marginBottom: "16px",
                     borderRadius: "8px",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                    border: "none"
+                    border: "none",
+                    width: "100%"
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
@@ -597,6 +691,90 @@ function RequestList() {
 
       </Card>
 
+      {/* Mobile Filter Drawer */}
+      <Drawer
+        title="Filtreler"
+        placement="bottom"
+        onClose={hideFilterDrawer}
+        open={filterDrawerVisible}
+        height="auto"
+        style={{ maxHeight: "80vh" }}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Status</label>
+            <Select 
+              placeholder="Status seçin" 
+              style={{ width: "100%" }} 
+              allowClear
+              onChange={handleStatusFilterChange}
+            >
+              <Option value="open">Open</Option>
+              <Option value="closed">Closed</Option>
+            </Select>
+          </div>
+          
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Priority</label>
+            <Select 
+              placeholder="Priority seçin" 
+              style={{ width: "100%" }} 
+              allowClear
+              onChange={handlePriorityFilterChange}
+            >
+              <Option value="high">High</Option>
+              <Option value="normal">Normal</Option>
+              <Option value="low">Low</Option>
+            </Select>
+          </div>
+          
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Category</label>
+            <Select 
+              placeholder="Category seçin" 
+              style={{ width: "100%" }} 
+              allowClear
+              onChange={handleCategoryFilterChange}
+            >
+              <Option value="category1">Category 1</Option>
+              <Option value="category2">Category 2</Option>
+              <Option value="category3">Category 3</Option>
+            </Select>
+          </div>
+          
+          <div style={{ marginBottom: "24px" }}>
+            <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Sıralama</label>
+            <Select 
+              placeholder="Sıralama seçin" 
+              style={{ width: "100%" }} 
+              allowClear
+              onChange={handleOrderByChange}
+            >
+              <Option value="date">Tarih</Option>
+              <Option value="priority">Priority</Option>
+              <Option value="status">Status</Option>
+              <Option value="ticketId">Ticket ID</Option>
+            </Select>
+          </div>
+          
+          <div style={{ display: "flex", gap: "12px" }}>
+            <Button 
+              onClick={clearAllFilters}
+              style={{ flex: 1 }}
+            >
+              Filtreleri Temizle
+            </Button>
+            <Button 
+              type="primary"
+              onClick={hideFilterDrawer}
+              style={{ flex: 1 }}
+            >
+              Uygula
+            </Button>
+          </div>
+        </div>
+      </Drawer>
+
       <style jsx>{`
         /* Tab Styles */
         .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
@@ -605,6 +783,27 @@ function RequestList() {
         }
         .ant-tabs-ink-bar {
           background: #632d91 !important;
+        }
+        
+        /* Mobile Tab Styles */
+        @media (max-width: 768px) {
+          .ant-dropdown-menu {
+            background: white !important;
+            border: 1px solid #d9d9d9 !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+            border-radius: 6px !important;
+          }
+          .ant-dropdown-menu-item {
+            color: #333 !important;
+            padding: 8px 16px !important;
+          }
+          .ant-dropdown-menu-item:hover {
+            background: #f5f5f5 !important;
+          }
+          .ant-dropdown-menu-item-selected {
+            background: #e6f7ff !important;
+            color: #632d91 !important;
+          }
         }
         
         /* Dropdown Styles */
@@ -668,6 +867,7 @@ function RequestList() {
         /* Card Styles */
         .mobile-card {
           transition: all 0.3s ease;
+          margin-bottom: 16px !important;
         }
         .mobile-card:hover {
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
@@ -695,7 +895,10 @@ function RequestList() {
             font-size: 20px !important;
           }
           .ant-card {
-            margin-bottom: 12px !important;
+            margin-bottom: 16px !important;
+          }
+          .mobile-card {
+            margin-bottom: 16px !important;
           }
           .ant-pagination {
             text-align: center;
@@ -710,6 +913,26 @@ function RequestList() {
           /* Mobile text overflow */
           .mobile-card .meta-span {
             max-width: calc(100% - 6px) !important;
+          }
+          
+          /* Mobile container adjustments */
+          .ant-card-body {
+            padding: 12px !important;
+          }
+          
+          /* Mobile tabs adjustments */
+          .ant-tabs-content-holder {
+            padding: 0 !important;
+          }
+          
+          /* Mobile filter row adjustments */
+          .ant-row {
+            margin-left: -4px !important;
+            margin-right: -4px !important;
+          }
+          .ant-col {
+            padding-left: 4px !important;
+            padding-right: 4px !important;
           }
         }
       `}</style>
